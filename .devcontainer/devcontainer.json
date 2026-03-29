@@ -1,0 +1,22 @@
+{
+  "name": "homelab",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "remoteEnv": {
+    "SSH_AUTH_SOCK": "${localEnv:SSH_AUTH_SOCK}"
+  },
+  "features": {
+    "ghcr.io/devcontainers-extra/features/ansible:2": {}
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "vscodevim.vim"
+      ],
+      "settings": {
+        "workbench.colorTheme": "Default Dark Modern"
+      }
+    }
+  }
+}

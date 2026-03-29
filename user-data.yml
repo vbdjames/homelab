@@ -1,0 +1,95 @@
+#cloud-config
+autoinstall:
+  version: 1
+
+  # -----------------------------------------------------------------------
+  # Locale and keyboard
+  # -----------------------------------------------------------------------
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+
+  # -----------------------------------------------------------------------
+  # Identity
+  # Change: hostname per server (hl-01 through hl-06)
+  # -----------------------------------------------------------------------
+  identity:
+    hostname: hl-01
+    # Ansible user — password login disabled, SSH key only
+    # Password hash is a locked placeholder; access is via SSH key only
+    username: ansible
+    password: "!"
+
+  # -----------------------------------------------------------------------
+  # Networking (Netplan)
+  # Change: addresses per server
+  #   hl-01: 192.168.1.200/24
+  #   hl-02: 192.168.1.201/24
+  #   hl-03: 192.168.1.202/24
+  #   hl-04: 192.168.1.203/24
+  #   hl-05: 192.168.1.204/24
+  #   hl-06: 192.168.1.205/24
+  # -----------------------------------------------------------------------
+  network:
+    version: 2
+    ethernets:
+      enp1s0:
+        dhcp4: false
+        addresses:
+          - 192.168.1.200/24         # change per server
+        routes:
+          - to: default
+            via: 192.168.1.1
+        nameservers:
+          addresses:
+            - 192.168.1.1
+            - 1.1.1.1
+
+  # -----------------------------------------------------------------------
+  # SSH
+  # -----------------------------------------------------------------------
+  ssh:
+    install-server: true
+    allow-pw: false                  # key-only authentication
+    authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII7AJTnpuX6N6cbYMcBAeTR5VhsXn7wM1fRIVMGmwZyg ansible@homelab
+
+  # -----------------------------------------------------------------------
+  # Disk layout — LVM
+  # Wipes the first detected disk and sets up:
+  #   - 1 GB  /boot/efi  (ESP)
+  #   - 2 GB  /boot
+  #   - remainder → LVM VG → root LV (100% of VG)
+  # -----------------------------------------------------------------------
+  storage:
+    layout:
+      name: lvm
+
+  # -----------------------------------------------------------------------
+  # Packages installed at provision time — keep minimal
+  # Ansible requires python3; everything else is handled by playbooks
+  # -----------------------------------------------------------------------
+  packages:
+    - python3
+    - python3-apt
+    - curl
+    - vim
+
+  # -----------------------------------------------------------------------
+  # Sudoers — allow ansible user to run sudo without a password
+  # -----------------------------------------------------------------------
+  user-data:
+    write_files:
+      - path: /etc/sudoers.d/ansible
+        content: "ansible ALL=(ALL) NOPASSWD:ALL\n"
+        permissions: "0440"
+
+  # -----------------------------------------------------------------------
+  # Reboot automatically when install completes
+  # -----------------------------------------------------------------------
+  late-commands:
+    - curtin in-target --target=/target -- systemctl enable ssh
+
+  power_state:
+    mode: reboot
+
