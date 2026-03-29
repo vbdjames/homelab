@@ -1,12 +1,13 @@
 ---
 # Homelab Ansible Inventory
-# Project root: ~/homelab-ansible  (update if path changes)
+# Project root: ~/homelab
 #
 # Groups:
 #   k8s_control_plane  — hl-01 (4GB/15GB, k8s control plane)
 #   k8s_workers        — hl-02 through hl-06 (8GB, k8s workers)
-#   nas                — Synology NAS
 #   homelab            — all of the above (parent group)
+#
+# Note: nas-01 (Synology DiskStation) is not managed by Ansible — see nas-runbook.md
 
 all:
   children:
@@ -30,11 +31,6 @@ all:
               ansible_host: 192.168.1.204
             hl-06:
               ansible_host: 192.168.1.205
-
-        nas:
-          hosts:
-            nas-01:
-              ansible_host: 192.168.1.3
 
   vars:
     ansible_user: ansible

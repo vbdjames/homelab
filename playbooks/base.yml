@@ -1,0 +1,95 @@
+---
+- name: Base configuration for all homelab nodes
+  hosts: homelab
+  become: true
+
+  tasks:
+
+    # -------------------------------------------------------------------------
+    # Packages
+    # -------------------------------------------------------------------------
+    - name: Update apt cache and upgrade packages
+      ansible.builtin.apt:
+        update_cache: true
+        upgrade: dist
+        cache_valid_time: 3600
+
+    - name: Install common packages
+      ansible.builtin.apt:
+        name:
+          - vim
+          - htop
+          - curl
+          - wget
+          - git
+          - ufw
+        state: present
+
+    # -------------------------------------------------------------------------
+    # Timezone and time sync
+    # -------------------------------------------------------------------------
+    - name: Set timezone
+      community.general.timezone:
+        name: America/New_York
+
+    - name: Ensure systemd-timesyncd is enabled and running
+      ansible.builtin.systemd:
+        name: systemd-timesyncd
+        state: started
+        enabled: true
+
+    # -------------------------------------------------------------------------
+    # Admin user
+    # -------------------------------------------------------------------------
+    - name: Create djames user
+      ansible.builtin.user:
+        name: djames
+        groups: sudo
+        append: true
+        shell: /bin/bash
+        create_home: true
+
+    - name: Add djames SSH public key
+      ansible.posix.authorized_key:
+        user: djames
+        key: "{{ djames_ssh_public_key }}"
+        state: present
+
+    - name: Allow djames passwordless sudo
+      ansible.builtin.copy:
+        content: "djames ALL=(ALL) NOPASSWD:ALL\n"
+        dest: /etc/sudoers.d/djames
+        mode: "0440"
+
+    # -------------------------------------------------------------------------
+    # SSH hardening
+    # Use a drop-in file rather than editing sshd_config directly
+    # -------------------------------------------------------------------------
+    - name: Harden SSH configuration
+      ansible.builtin.copy:
+        content: |
+          PasswordAuthentication no
+          PermitRootLogin no
+        dest: /etc/ssh/sshd_config.d/99-homelab.conf
+        mode: "0600"
+      notify: Restart sshd
+
+    # -------------------------------------------------------------------------
+    # Firewall
+    # Allow SSH before enabling to avoid locking ourselves out
+    # -------------------------------------------------------------------------
+    - name: Allow SSH through UFW
+      community.general.ufw:
+        rule: allow
+        name: OpenSSH
+
+    - name: Enable UFW (default deny incoming)
+      community.general.ufw:
+        state: enabled
+        policy: deny
+
+  handlers:
+    - name: Restart sshd
+      ansible.builtin.systemd:
+        name: ssh
+        state: restarted
