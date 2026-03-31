@@ -2,13 +2,13 @@
 
 ## Context
 
-This runbook covers preparing the USB install media and the step-by-step procedure for provisioning each Ubuntu 24.04 server. A single `user-data.yml` template is used for all servers — the hostname and IP address are updated in-place before each install.
+This runbook covers preparing the USB install media and the step-by-step procedure for provisioning each Ubuntu 24.04 server. Each server has a pre-configured `user-data` file in `user-data/` with its hostname and IP already set.
 
 **Equipment needed:**
 - USB stick 1 — boot stick (8 GB minimum, holds the Ubuntu ISO)
 - USB stick 2 — config stick (any size, holds `user-data`)
 - Laptop (Linux) as the workstation for preparing media
-- Wyze 5070 servers to be provisioned
+- Wyse 5070 servers to be provisioned
 
 ---
 
@@ -80,52 +80,22 @@ sudo mkdir -p /mnt/cidata
 
 ---
 
-### Step 4 — Verify the NIC Interface Name on Wyse 5070
-
-`user-data.yml` uses `enp1s0` as the network interface name. This must be verified against actual hardware before the first real install — if it's wrong the server will boot without networking.
-
-Boot one Wyse 5070 from USB 1 (boot stick only, no config stick). At the installer welcome screen, drop to a shell:
-
-- Select **Help** → **Enter shell**, or press `Ctrl+Alt+F2`
-
-Run:
-
-```bash
-ip link
-```
-
-Look for the interface name — it will be something like `enp1s0`, `eno1`, `eth0`, or similar. Note it down.
-
-If the interface name differs from `enp1s0`, update `user-data.yml` before proceeding:
-
-```bash
-sed -i 's/enp1s0/ACTUAL_NAME/g' user-data.yml
-```
-
----
-
 ## Per-Server Install Procedure
 
 Repeat the following steps for each server (`hl-01` through `hl-06`), in order.
 
-### Step 1 — Update user-data.yml and Load onto the Config Stick
+### Step 1 — Load the Config Stick
 
-Update the hostname and IP in `user-data.yml` for the server you are about to install:
+Each server has a pre-configured `user-data` file with the correct hostname and IP already set. Just copy the right one:
 
-| Server | Hostname | IP |
+| Server | File | IP |
 |---|---|---|
-| hl-01 | `hl-01` | `192.168.1.200` |
-| hl-02 | `hl-02` | `192.168.1.201` |
-| hl-03 | `hl-03` | `192.168.1.202` |
-| hl-04 | `hl-04` | `192.168.1.203` |
-| hl-05 | `hl-05` | `192.168.1.204` |
-| hl-06 | `hl-06` | `192.168.1.205` |
-
-Edit the two fields in `user-data.yml`:
-- `identity.hostname` — set to this server's hostname
-- `network.ethernets.enp1s0.addresses` — set to this server's IP
-
-Then copy to the config stick:
+| hl-01 | `user-data/user-data-hl-01.yml` | `192.168.1.150` |
+| hl-02 | `user-data/user-data-hl-02.yml` | `192.168.1.151` |
+| hl-03 | `user-data/user-data-hl-03.yml` | `192.168.1.152` |
+| hl-04 | `user-data/user-data-hl-04.yml` | `192.168.1.153` |
+| hl-05 | `user-data/user-data-hl-05.yml` | `192.168.1.154` |
+| hl-06 | `user-data/user-data-hl-06.yml` | `192.168.1.155` |
 
 ```bash
 sudo mount /dev/sdY /mnt/cidata
@@ -133,8 +103,8 @@ sudo mount /dev/sdY /mnt/cidata
 # Clear any previous install's files
 sudo rm -f /mnt/cidata/user-data /mnt/cidata/meta-data
 
-# Copy the updated template (meta-data must exist but can be empty)
-sudo cp user-data.yml /mnt/cidata/user-data
+# Copy this server's user-data (meta-data must exist but can be empty)
+sudo cp user-data/user-data-hl-01.yml /mnt/cidata/user-data   # replace hl-01 with this server's hostname
 sudo touch /mnt/cidata/meta-data
 
 sudo umount /mnt/cidata
@@ -144,7 +114,7 @@ sudo umount /mnt/cidata
 
 ### Step 2 — Boot the Server from USB 1
 
-Insert both USB sticks into the server. Power on and enter the boot menu (check Wyze 5070 documentation for the boot menu key — typically `F7`, `F11`, or `F12`).
+Insert both USB sticks into the server. Power on and enter the boot menu (Wyse 5070 boot menu is typically `F7`, `F11`, or `F12`).
 
 Select USB 1 (the boot stick) as the boot device.
 
@@ -167,39 +137,34 @@ Typical install time: 5–10 minutes depending on disk speed.
 From the laptop (control node), once the server has rebooted:
 
 ```bash
-# Confirm network reachability
-ping -c 3 hl-01
-
-# Confirm SSH access
-ssh -i ~/.ssh/ansible_homelab ansible@hl-01
+# Confirm SSH access and hostname
+ssh hl-01 hostname
 ```
 
-If SSH connects successfully, the server is ready for Ansible.
+Expected output: `hl-01`
 
-If `ping` fails:
+If SSH fails:
 - Wait 60 seconds and try again — the server may still be booting
 - Verify the USB sticks were removed before reboot
-- Check that the NIC interface name in `user-data` is correct (see Step 4 of One-Time Setup)
+- Try connecting directly by IP to rule out SSH config issues: `ssh ansible@192.168.1.150 hostname`
 
 ---
 
 ## Checklist
 
 ### One-time setup
-- [ ] Ubuntu 24.04 ISO downloaded and checksum verified
-- [ ] ISO written to USB 1 (boot stick)
-- [ ] USB 2 (config stick) formatted as FAT32 with label `CIDATA`
-- [ ] NIC interface name verified on Wyze 5070 hardware
-- [ ] `user-data.yml` updated with correct interface name if needed
-- [ ] Wyze 5070 boot menu key confirmed
+- [x] Ubuntu 24.04 ISO downloaded and checksum verified
+- [x] ISO written to USB 1 (boot stick)
+- [x] USB 2 (config stick) formatted as FAT32 with label `CIDATA`
+- [x] Wyse 5070 boot menu key confirmed
 
 ### Per server
-- [ ] `hl-01` — config stick loaded, installed, SSH verified
-- [ ] `hl-02` — config stick loaded, installed, SSH verified
-- [ ] `hl-03` — config stick loaded, installed, SSH verified
-- [ ] `hl-04` — config stick loaded, installed, SSH verified
-- [ ] `hl-05` — config stick loaded, installed, SSH verified
-- [ ] `hl-06` — config stick loaded, installed, SSH verified
+- [x] `hl-01` — config stick loaded, installed, SSH verified
+- [x] `hl-02` — config stick loaded, installed, SSH verified
+- [x] `hl-03` — config stick loaded, installed, SSH verified
+- [x] `hl-04` — config stick loaded, installed, SSH verified
+- [x] `hl-05` — config stick loaded, installed, SSH verified
+- [x] `hl-06` — config stick loaded, installed, SSH verified
 
 ---
 

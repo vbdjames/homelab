@@ -1,13 +1,13 @@
-# NAS Runbook — nas-01
+# NAS Runbook — nas
 
 ## Context
 
-`nas-01` is a Synology DiskStation providing persistent storage for the homelab. It is configured manually via the DSM web UI and is **not managed by Ansible**.
+`nas` is a Synology DiskStation providing persistent storage for the homelab. It is configured manually via the DSM web UI and is **not managed by Ansible**.
 
 This runbook captures only the Kubernetes-relevant configuration — shares, exports, access controls, and integration decisions made over time. It does not attempt to document the full DSM configuration.
 
 **Environment:**
-- Host: `nas-01` (`192.168.1.3`)
+- Host: `nas` (`192.168.1.3`)
 - OS: Synology DSM
 - Management UI: `http://192.168.1.3:5000` (or `https://192.168.1.3:5001`)
 

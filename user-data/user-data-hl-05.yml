@@ -1,0 +1,55 @@
+#cloud-config
+autoinstall:
+  version: 1
+
+  locale: en_US.UTF-8
+  keyboard:
+    layout: us
+
+  identity:
+    hostname: hl-05
+    username: ansible
+    password: "!"
+
+  network:
+    version: 2
+    ethernets:
+      enp1s0:
+        dhcp4: false
+        addresses:
+          - 192.168.1.154/24
+        routes:
+          - to: default
+            via: 192.168.1.1
+        nameservers:
+          addresses:
+            - 192.168.1.1
+            - 1.1.1.1
+
+  ssh:
+    install-server: true
+    allow-pw: false
+    authorized-keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAII7AJTnpuX6N6cbYMcBAeTR5VhsXn7wM1fRIVMGmwZyg ansible@homelab
+
+  storage:
+    layout:
+      name: lvm
+
+  packages:
+    - python3
+    - python3-apt
+    - curl
+    - vim
+
+  user-data:
+    write_files:
+      - path: /etc/sudoers.d/ansible
+        content: "ansible ALL=(ALL) NOPASSWD:ALL\n"
+        permissions: "0440"
+
+  late-commands:
+    - curtin in-target --target=/target -- systemctl enable ssh
+
+  power_state:
+    mode: reboot
