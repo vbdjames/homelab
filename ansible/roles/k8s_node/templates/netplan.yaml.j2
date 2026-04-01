@@ -1,0 +1,16 @@
+# Managed by Ansible — do not edit manually
+network:
+  version: 2
+  ethernets:
+    {{ k8s_network_interface }}:
+      dhcp4: false
+      addresses:
+        - {{ ansible_host }}/24
+      routes:
+        - to: default
+          via: {{ k8s_gateway }}
+      nameservers:
+        addresses:
+{% for ns in k8s_nameservers %}
+          - {{ ns }}
+{% endfor %}

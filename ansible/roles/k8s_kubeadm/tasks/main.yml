@@ -1,0 +1,55 @@
+---
+# -------------------------------------------------------------------------
+# Kubernetes apt repository
+# Uses pkgs.k8s.io (the old packages.cloud.google.com repo is deprecated)
+# -------------------------------------------------------------------------
+- name: Create /etc/apt/keyrings directory
+  ansible.builtin.file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+
+- name: Download Kubernetes apt signing key
+  ansible.builtin.shell:
+    cmd: >
+      curl -fsSL
+      https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version | regex_replace('^(\d+\.\d+)\..*$', '\1') }}/deb/Release.key
+      | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+    creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+
+- name: Add Kubernetes apt repository
+  ansible.builtin.apt_repository:
+    repo: >-
+      deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg]
+      https://pkgs.k8s.io/core:/stable:/v{{ kubernetes_version | regex_replace('^(\d+\.\d+)\..*$', '\1') }}/deb/ /
+    state: present
+    filename: kubernetes
+
+# -------------------------------------------------------------------------
+# Install kubeadm, kubelet, kubectl
+# Versions are held to prevent unintended upgrades via apt
+# -------------------------------------------------------------------------
+- name: Install Kubernetes packages
+  ansible.builtin.apt:
+    name:
+      - "kubelet={{ kubernetes_version }}-*"
+      - "kubeadm={{ kubernetes_version }}-*"
+      - "kubectl={{ kubernetes_version }}-*"
+    state: present
+    update_cache: true
+
+- name: Hold Kubernetes package versions
+  ansible.builtin.dpkg_selections:
+    name: "{{ item }}"
+    selection: hold
+  loop:
+    - kubelet
+    - kubeadm
+    - kubectl
+
+- name: Enable and start kubelet
+  ansible.builtin.systemd:
+    name: kubelet
+    state: started
+    enabled: true
+  # kubelet will crash-loop until kubeadm init/join runs — this is expected

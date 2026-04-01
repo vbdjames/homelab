@@ -1,0 +1,431 @@
+# Homelab Kubernetes Cluster — Build Runbook
+
+> **Status:** Active — network finalized, Ansible roles built, cluster provisioning in progress
+> **Last updated:** 2026-03-30
+> **Stack:** Ubuntu 24.04 · kubeadm · Cilium · MetalLB · ArgoCD · Synology NAS (NFS)
+
+---
+
+## Table of Contents
+
+1. [Architecture Decisions](#1-architecture-decisions)
+2. [IP & Network Plan](#2-ip--network-plan)
+3. [Prerequisites](#3-prerequisites)
+4. [Phase 1 — Node Provisioning (Ansible)](#4-phase-1--node-provisioning-ansible)
+5. [Phase 2 — Cluster Init (Ansible)](#5-phase-2--cluster-init-ansible)
+6. [Phase 3 — Bootstrap ArgoCD](#6-phase-3--bootstrap-argocd)
+7. [Repo Structure](#7-repo-structure)
+8. [Runbook — Day 2 Operations](#8-runbook--day-2-operations)
+9. [Confirmed Values](#9-confirmed-values)
+
+---
+
+## 1. Architecture Decisions
+
+A record of every significant decision and its rationale. Update this section if anything changes.
+
+| Decision | Choice | Rationale |
+|---|---|---|
+| Container runtime | containerd | Default for kubeadm; Docker not required |
+| CNI | Cilium | eBPF-based, strong observability via Hubble, industry direction |
+| Cluster bootstrap | kubeadm | Standard, well-documented, works well with Ansible |
+| Control plane topology | Single control node | Appropriate for homelab; HA can be added later with kube-vip |
+| Control plane endpoint | Static IP (`192.168.1.150`) | Simple, no DNS dependency at init time; DNS alias to be added when Pi-hole is deployed |
+| Pod network CIDR | `172.16.0.0/16` | Avoids conflict with LAN (`192.168.x.x`) and work VPN (`10.x.x.x`) |
+| Service CIDR | `172.17.0.0/16` | Same reasoning; clean separation from pod CIDR |
+| Load balancer | MetalLB (L2 mode) | Best documentation, widely used in homelab and on-prem; L2 mode requires no BGP-capable router |
+| Ingress | ingress-nginx | Standard, well-supported, pairs cleanly with cert-manager |
+| TLS | cert-manager | Automates certificate lifecycle; self-signed CA internally to start |
+| GitOps | ArgoCD | Better UI for learning; App-of-Apps pattern for managing infrastructure |
+| Storage (primary) | NFS via Synology | RWX support, simple setup, covers most use cases |
+| Storage (future) | iSCSI via Synology | To be added when block storage is needed (e.g. databases with heavy I/O) |
+| Secrets | Sealed Secrets | Encrypted at rest in Git; simple operator model |
+| Observability | kube-prometheus-stack + Loki | Full metrics + logs stack; standard in production environments |
+| kubectl access | Local machine + control node | kubeconfig on local machine for daily use; control node as fallback |
+
+---
+
+## 2. IP & Network Plan
+
+> ℹ️ Network finalized 2026-03-30. All node IPs confirmed.
+
+### Subnet Layout
+
+| Range | Purpose |
+|---|---|
+| `192.168.1.1` | Gateway (Verizon router) |
+| `192.168.1.2 – 192.168.1.149` | DHCP pool (router-managed) |
+| `192.168.1.150 – 192.168.1.169` | Static — nodes and NAS |
+| `192.168.1.170` | Static — HP 1820-24G managed switch (management IP) |
+| `192.168.1.171 – 192.168.1.199` | Reserved for future static devices |
+| `192.168.1.200 – 192.168.1.254` | MetalLB IP pool (not in router DHCP) |
+
+> ℹ️ Network cleanup fully completed 2026-03-30. All ranges clear.
+
+### Node IPs
+
+| Host | Role | IP |
+|---|---|---|
+| `hl-01` | Control plane | `192.168.1.150` |
+| `hl-02` | Worker | `192.168.1.151` |
+| `hl-03` | Worker | `192.168.1.152` |
+| `hl-04` | Worker | `192.168.1.153` |
+| `hl-05` | Worker | `192.168.1.154` |
+| `hl-06` | Worker | `192.168.1.155` |
+| `nas` | NAS | `192.168.1.3` |
+
+### Cluster CIDRs
+
+| Purpose | CIDR |
+|---|---|
+| Pod network | `172.16.0.0/16` |
+| Service network | `172.17.0.0/16` |
+| MetalLB pool | `192.168.1.200 – 192.168.1.254` |
+
+### Network Cleanup Status
+
+- [x] Shrink DHCP pool end to `192.168.1.149` ✅
+- [x] Add DHCP reservations for fixed devices ✅
+  - Synology NAS pinned at `192.168.1.3`
+  - QCA4002 device at `192.168.1.100`
+  - Cisco extender/mesh node at `192.168.1.101`
+  - Vizio TV at `192.168.1.102`
+- [x] Verify `.150–.169` clear ✅
+- [x] MetalLB pool set to `.200–.244` (capped due to two unresolved static devices) ✅
+- [x] Identify and move `192.168.1.248` (Mac Mini / Kubuntu) — resolved 2026-03-30, now at `.56` ✅
+- [x] Identify and move `192.168.1.245` (HP 1820-24G switch) — resolved 2026-03-30, moved to `.170` ✅
+- [x] MetalLB pool expanded to full `192.168.1.200–192.168.1.254` ✅
+- [x] Update node IPs in `ansible/inventory/hosts.yml` ✅
+
+---
+
+## 3. Prerequisites
+
+### On your local machine
+
+- [x] Ansible installed (`pip install ansible`)
+- [ ] `kubectl` installed and on PATH
+- [x] SSH key deployed to all nodes (`ssh-copy-id user@NODE_IP`)
+- [x] Git repo cloned locally
+
+### On each node (should be done by existing Ansible plays)
+
+- [x] Ubuntu 24.04 installed
+- [x] SSH accessible
+- [x] Sudo without password for Ansible user
+- [x] Static IP set via netplan (see Phase 1)
+
+---
+
+## 4. Phase 1 — Node Provisioning (Ansible)
+
+**Goal:** Take bare Ubuntu 24.04 nodes to a state ready for `kubeadm`.
+**Playbook:** `ansible/k8s-provision.yml`
+**Runs against:** all nodes (control + workers)
+
+### Ansible Repo Structure
+
+```
+ansible/
+├── inventory/
+│   ├── hosts.yml
+│   └── group_vars/
+│       └── all.yml
+├── roles/
+│   ├── k8s_node/         # swap, kernel modules, sysctl, containerd, UFW, netplan
+│   ├── k8s_kubeadm/      # install kubeadm, kubelet, kubectl
+│   ├── k8s_control_plane/ # kubeadm init, kubeconfig, Helm, Cilium
+│   ├── k8s_workers/      # kubeadm join
+│   └── k8s_argocd/       # one-time ArgoCD bootstrap
+├── README.md              # playbook descriptions and run order
+├── base.yml               # base OS config (all homelab nodes)
+├── k8s-provision.yml      # runs base + k8s_node + k8s_kubeadm on all nodes
+├── k8s-init.yml           # control plane init + workers join + Cilium
+├── k8s-bootstrap.yml      # ArgoCD bootstrap (run once after cluster is healthy)
+└── k8s-add-node.yml       # for adding future worker nodes
+```
+
+See `ansible/inventory/hosts.yml` and `ansible/inventory/group_vars/all.yml`.
+
+### Role: `k8s_node`
+
+Tasks (in order):
+
+1. **Disable swap** — `swapoff -a` + comment out swap entry in `/etc/fstab`
+
+2. **Load kernel modules** — `overlay`, `br_netfilter`; persisted in `/etc/modules-load.d/k8s.conf`
+
+3. **Set sysctl params** — write to `/etc/sysctl.d/k8s.conf`:
+   ```
+   net.bridge.bridge-nf-call-iptables  = 1
+   net.bridge.bridge-nf-call-ip6tables = 1
+   net.ipv4.ip_forward                 = 1
+   ```
+
+4. **Install containerd**
+   - Add Docker apt repo (containerd is distributed here)
+   - Install `containerd.io={{ containerd_version }}`
+   - Generate default config; enable `SystemdCgroup = true`
+   - Enable and start `containerd` service
+
+5. **Disable UFW** — Cilium handles network policy on k8s nodes
+
+6. **Set static IP via netplan** — removes the cloud-init-generated config and writes `/etc/netplan/01-k8s-static.yaml` using `ansible_host` as the node IP and `enp1s0` as the interface (confirmed on Wyse 5070s)
+
+### Role: `k8s_kubeadm`
+
+1. Add Kubernetes apt repo (`pkgs.k8s.io` — the old `packages.cloud.google.com` repo is deprecated)
+2. Install `kubelet`, `kubeadm`, `kubectl` at `{{ kubernetes_version }}`
+3. Hold package versions with `apt-mark hold`
+4. Enable and start `kubelet` service (it will crash-loop until `kubeadm init` — this is normal)
+
+### Run Phase 1
+
+```bash
+ansible-playbook ansible/k8s-provision.yml
+```
+
+**Verify:**
+
+```bash
+ansible k8s_control_plane:k8s_workers -m command -a "systemctl is-active containerd"
+ansible k8s_control_plane:k8s_workers -m command -a "swapon --show"       # no output = swap off
+ansible k8s_control_plane:k8s_workers -m command -a "sysctl net.ipv4.ip_forward"  # should return 1
+```
+
+---
+
+## 5. Phase 2 — Cluster Init (Ansible)
+
+**Goal:** Initialize the control plane, join workers, install CNI.
+**Playbook:** `ansible/k8s-init.yml`
+
+### Role: `k8s_control_plane`
+
+1. **Run `kubeadm init`** on the control node:
+   ```bash
+   kubeadm init \
+     --control-plane-endpoint=192.168.1.150 \
+     --pod-network-cidr=172.16.0.0/16 \
+     --service-cidr=172.17.0.0/16 \
+     --upload-certs
+   ```
+
+2. **Set up kubeconfig** on the control node for the `ansible` user, and fetch it to `~/.kube/config` on the local machine.
+
+3. **Install Helm** on the control node, then install Cilium via Helm.
+
+4. **Capture join command** — registered as an Ansible fact and consumed by the workers role.
+
+### Role: `k8s_workers`
+
+Run the captured join command on all worker nodes. Already-joined nodes are detected via `/etc/kubernetes/kubelet.conf` and skipped.
+
+### Cilium CNI — installed by `k8s_control_plane` role via Helm
+
+Cilium is installed as part of the control plane role (after `kubeadm init`) using Helm:
+
+```bash
+helm repo add cilium https://helm.cilium.io/
+helm install cilium cilium/cilium --version {{ cilium_version }} \
+  --namespace kube-system \
+  --set ipam.mode=kubernetes
+```
+
+Helm itself is installed on the control node by the same role before this step.
+
+### Run Phase 2
+
+```bash
+ansible-playbook ansible/k8s-init.yml
+```
+
+### Verify Cluster Health
+
+```bash
+# All 6 nodes should be Ready
+kubectl get nodes
+
+# All system pods running
+kubectl get pods -n kube-system
+
+# Cilium healthy
+cilium status
+```
+
+> ✅ **This is the handoff point.** Once all nodes show `Ready`, Ansible's job is largely done. Everything from here is managed via GitOps (ArgoCD).
+
+---
+
+## 6. Phase 3 — Bootstrap ArgoCD
+
+**Goal:** Get ArgoCD running so it can manage all future cluster state from Git.
+**Playbook:** `ansible/k8s-bootstrap.yml`
+**Run once only** — after this, ArgoCD manages itself.
+
+### Bootstrap Steps
+
+1. **Create namespace:**
+   ```bash
+   kubectl create namespace argocd
+   ```
+
+2. **Install ArgoCD:**
+   ```bash
+   kubectl apply -n argocd \
+     -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+   ```
+
+3. **Wait for ArgoCD to be ready:**
+   ```bash
+   kubectl wait --for=condition=available deployment/argocd-server \
+     -n argocd --timeout=300s
+   ```
+
+4. **Get initial admin password:**
+   ```bash
+   kubectl -n argocd get secret argocd-initial-admin-secret \
+     -o jsonpath="{.data.password}" | base64 -d
+   ```
+
+5. **Expose ArgoCD UI** (temporary NodePort for initial access — MetalLB will handle this properly once deployed):
+   ```bash
+   kubectl patch svc argocd-server -n argocd \
+     -p '{"spec": {"type": "NodePort"}}'
+   ```
+   Access at `https://CONTROL_PLANE_IP:<nodeport>`
+
+6. **Apply the App-of-Apps root application** to activate GitOps — see `notes/planned-infrastructure.md`.
+
+### Run Phase 3
+
+```bash
+ansible-playbook ansible/k8s-bootstrap.yml
+```
+
+### Verify ArgoCD
+
+```bash
+# All ArgoCD pods should be Running
+kubectl get pods -n argocd
+
+# Get the NodePort and access URL
+kubectl get svc argocd-server -n argocd
+
+# Confirm admin password is retrievable
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+```
+
+Access the UI at `https://192.168.1.150:<nodeport>` — username `admin`, password from above.
+
+---
+
+## 7. Repo Structure
+
+```
+homelab/
+├── ansible.cfg
+├── ansible/
+│   ├── inventory/
+│   │   ├── hosts.yml
+│   │   └── group_vars/
+│   │       └── all.yml
+│   ├── requirements.yml
+│   ├── roles/
+│   │   ├── k8s_node/
+│   │   ├── k8s_kubeadm/
+│   │   ├── k8s_control_plane/
+│   │   ├── k8s_workers/
+│   │   └── k8s_argocd/
+│   ├── README.md
+│   ├── base.yml
+│   ├── k8s-provision.yml
+│   ├── k8s-init.yml
+│   ├── k8s-bootstrap.yml
+│   └── k8s-add-node.yml
+├── docs/
+│   ├── homelab-runbook.md
+│   ├── router-setup-runbook.md
+│   ├── usb-prep-install-runbook.md
+│   └── nas-runbook.md
+└── user-data/
+    └── user-data-hl-{01-06}.yml
+```
+
+---
+
+## 8. Runbook — Day 2 Operations
+
+### Add a Worker Node
+
+1. Provision the new machine (Ubuntu 24.04, static IP)
+2. Run base config against the new node:
+   ```bash
+   ansible-playbook ansible/base.yml --limit hl-07
+   ```
+3. Run the add-node playbook (generates a fresh join token automatically):
+   ```bash
+   ansible-playbook ansible/k8s-add-node.yml -e target_host=hl-07
+   ```
+4. Verify: `kubectl get nodes`
+
+### Upgrade Kubernetes Version
+
+> ⚠️ An `upgrade.yml` playbook has not yet been written. The steps below are the intended approach.
+
+1. Update `kubernetes_version` in `ansible/inventory/group_vars/all.yml`, commit to Git
+2. Drain, upgrade, and uncordon the control plane manually or via a future `k8s-upgrade.yml` playbook
+3. Upgrade workers one at a time, draining each before upgrading
+
+### Drain a Node for Maintenance
+
+```bash
+# Drain (evicts pods gracefully)
+kubectl drain hl-02 --ignore-daemonsets --delete-emptydir-data
+
+# Do maintenance work...
+
+# Return node to service
+kubectl uncordon hl-02
+```
+
+### Reset a Node (full wipe and rejoin)
+
+```bash
+# On the node
+kubeadm reset
+iptables -F && iptables -t nat -F && iptables -t mangle -F
+
+# Then re-run the add-node playbook
+ansible-playbook ansible/k8s-add-node.yml -e target_host=hl-02
+```
+
+### Access ArgoCD UI
+
+```bash
+# Port-forward if no ingress yet
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+
+# Get password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d
+```
+
+---
+
+## 9. Confirmed Values
+
+| Item | Value |
+|---|---|
+| `hl-01` (control plane) | `192.168.1.150` ✅ |
+| `hl-02` (worker) | `192.168.1.151` ✅ |
+| `hl-03` (worker) | `192.168.1.152` ✅ |
+| `hl-04` (worker) | `192.168.1.153` ✅ |
+| `hl-05` (worker) | `192.168.1.154` ✅ |
+| `hl-06` (worker) | `192.168.1.155` ✅ |
+| `nas-01` (Synology NAS) | `192.168.1.3` ✅ |
+
+---
+
+*This runbook is a living document. Update it as the environment evolves — especially when IPs are confirmed, DNS is added, or new components are deployed.*

@@ -1,0 +1,42 @@
+---
+# Adds a new worker node to an existing cluster.
+# The node must already be in inventory before running this playbook.
+#
+# Run base.yml against the new node first:
+#   ansible-playbook ansible/base.yml --limit <new_host>
+#
+# Then run this playbook:
+#   ansible-playbook ansible/k8s-add-node.yml -e target_host=hl-07
+
+- name: Kubernetes node preparation
+  hosts: "{{ target_host }}"
+  become: true
+  roles:
+    - k8s_node
+    - k8s_kubeadm
+
+- name: Generate fresh join token on control plane
+  hosts: k8s_control_plane
+  become: true
+  tasks:
+    - name: Generate kubeadm join command
+      ansible.builtin.command: kubeadm token create --print-join-command
+      register: join_command_raw
+      changed_when: false
+
+    - name: Store join command as fact
+      ansible.builtin.set_fact:
+        kubeadm_join_command: "{{ join_command_raw.stdout }}"
+
+- name: Join new node to cluster
+  hosts: "{{ target_host }}"
+  become: true
+  tasks:
+    - name: Check if node has already joined
+      ansible.builtin.stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+
+    - name: Join node to cluster
+      ansible.builtin.command: "{{ hostvars[groups['k8s_control_plane'][0]]['kubeadm_join_command'] }}"
+      when: not kubelet_conf.stat.exists

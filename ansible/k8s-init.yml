@@ -1,0 +1,20 @@
+---
+# Creates the Kubernetes cluster.
+# Initializes the control plane, joins workers, installs Helm and Cilium CNI.
+# Fetches kubeconfig to ~/.kube/config on the local machine.
+#
+# Run after k8s-provision.yml. Run only once per cluster lifecycle.
+#
+# Usage: ansible-playbook ansible/k8s-init.yml
+
+- name: Initialize Kubernetes control plane
+  hosts: k8s_control_plane
+  become: true
+  roles:
+    - k8s_control_plane
+
+- name: Join worker nodes to cluster
+  hosts: k8s_workers
+  become: true
+  roles:
+    - k8s_workers

@@ -15,36 +15,54 @@ Infrastructure-as-code for a personal Kubernetes homelab built on Dell Wyse 5070
 ## Repo Structure
 
 ```
-ansible.cfg                    # Ansible configuration
+ansible.cfg                        # Ansible configuration
 ansible/
   inventory/
-    hosts.yml                  # Host and group definitions
+    hosts.yml                      # Host and group definitions
     group_vars/
-      all.yml                  # Variables shared across all hosts
-  requirements.yml             # Ansible collection dependencies
-  playbooks/
-    base.yml                   # Base OS config for all homelab nodes
+      all.yml                      # Variables shared across all hosts
+  requirements.yml                 # Ansible collection dependencies
+  README.md                        # Playbook descriptions and run order
+  base.yml                         # Base OS config for all homelab nodes
+  k8s-provision.yml                # Kubernetes node preparation
+  k8s-init.yml                     # Cluster initialization
+  k8s-bootstrap.yml                # ArgoCD bootstrap (run once)
+  k8s-add-node.yml                 # Add a worker node to existing cluster
+  roles/
+    k8s_node/                      # Swap, kernel modules, containerd, netplan
+    k8s_kubeadm/                   # kubelet, kubeadm, kubectl install
+    k8s_control_plane/             # kubeadm init, Helm, Cilium
+    k8s_workers/                   # kubeadm join
+    k8s_argocd/                    # ArgoCD bootstrap
 user-data/
-  user-data-hl-{01-06}.yml    # Per-server Ubuntu autoinstall configs (hostname + IP pre-set)
+  user-data-hl-01.yml              # Ubuntu autoinstall config per node
+  ...
 docs/
-  router-setup-runbook.md      # Network planning and IP assignments
-  usb-prep-install-runbook.md  # OS install procedure
-  nas-runbook.md               # NAS Kubernetes storage integration
+  router-setup-runbook.md          # Network planning and IP assignments
+  usb-prep-install-runbook.md      # OS install procedure
+  nas-runbook.md                   # NAS (nas-01) Kubernetes storage integration
 ```
 
 ## Provisioning
 
-1. **Network** — review IP assignments in `router-setup-runbook.md`
-2. **OS install** — follow `usb-prep-install-runbook.md` to install Ubuntu 24.04 on each node via USB autoinstall
-3. **Ansible** — install collections, verify connectivity, then run the base playbook:
+1. **Network** — review IP assignments in `docs/router-setup-runbook.md`
+2. **OS install** — follow `docs/usb-prep-install-runbook.md` to install Ubuntu 24.04 on each node via USB autoinstall
+3. **Ansible** — install collections and verify connectivity:
    ```bash
    ansible-galaxy collection install -r ansible/requirements.yml
    ansible all -m ping
-   ansible-playbook ansible/playbooks/base.yml
    ```
+4. **Provision and build the cluster:**
+   ```bash
+   ansible-playbook ansible/k8s-provision.yml
+   ansible-playbook ansible/k8s-init.yml
+   ansible-playbook ansible/k8s-bootstrap.yml
+   ```
+
+See `ansible/README.md` for full details and the add-node workflow.
 
 ## Prerequisites
 
 - [1Password](https://1password.com) with SSH agent enabled (provides the `ansible_homelab` key)
-- Ansible installed on the control node
-- `~/.ssh/config` entries for all nodes (see `router-setup-runbook.md`)
+- Ansible installed on your local machine
+- SSH config entries for all nodes (see `docs/router-setup-runbook.md`)

@@ -4,3 +4,21 @@ djames_ssh_public_key: "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQCocOiCfwDvrbX1ssks
 # Ansible connection
 ansible_user: ansible
 ansible_python_interpreter: /usr/bin/python3
+
+# Kubernetes component versions — bump here to upgrade
+kubernetes_version: "1.33.0"
+containerd_version: "1.7.29"
+cilium_version: "1.19.2"
+helm_version: "v3.17.3"
+
+# Node network settings
+k8s_network_interface: enp1s0
+k8s_gateway: 192.168.1.1
+k8s_nameservers:
+  - 192.168.1.1
+  - 1.1.1.1
+
+# Cluster CIDRs
+pod_network_cidr: "172.16.0.0/16"
+service_cidr: "172.17.0.0/16"
+

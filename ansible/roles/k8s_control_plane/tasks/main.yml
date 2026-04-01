@@ -1,0 +1,129 @@
+---
+# -------------------------------------------------------------------------
+# kubeadm init
+# -------------------------------------------------------------------------
+- name: Check if cluster has already been initialized
+  ansible.builtin.stat:
+    path: /etc/kubernetes/admin.conf
+  register: kubeadm_conf
+
+- name: Initialize Kubernetes control plane
+  ansible.builtin.command:
+    cmd: >
+      kubeadm init
+      --control-plane-endpoint={{ ansible_host }}
+      --pod-network-cidr={{ pod_network_cidr }}
+      --service-cidr={{ service_cidr }}
+      --upload-certs
+  when: not kubeadm_conf.stat.exists
+
+# -------------------------------------------------------------------------
+# kubeconfig
+# -------------------------------------------------------------------------
+- name: Create .kube directory for ansible user
+  ansible.builtin.file:
+    path: "/home/{{ ansible_user }}/.kube"
+    state: directory
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0755'
+
+- name: Copy admin.conf to ansible user kubeconfig
+  ansible.builtin.copy:
+    src: /etc/kubernetes/admin.conf
+    dest: "/home/{{ ansible_user }}/.kube/config"
+    owner: "{{ ansible_user }}"
+    group: "{{ ansible_user }}"
+    mode: '0600'
+    remote_src: true
+
+- name: Fetch kubeconfig to local machine
+  ansible.builtin.fetch:
+    src: /etc/kubernetes/admin.conf
+    dest: "~/.kube/config"
+    flat: true
+
+# -------------------------------------------------------------------------
+# Wait for API server
+# kubeadm init returns before the API server is fully ready to serve requests
+# -------------------------------------------------------------------------
+- name: Wait for Kubernetes API server to be ready
+  ansible.builtin.command:
+    cmd: kubectl cluster-info
+  environment:
+    KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
+  register: cluster_info
+  until: cluster_info.rc == 0
+  retries: 20
+  delay: 15
+  changed_when: false
+
+# -------------------------------------------------------------------------
+# Helm
+# -------------------------------------------------------------------------
+- name: Download Helm install script
+  ansible.builtin.get_url:
+    url: https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+    dest: /tmp/get-helm.sh
+    mode: '0700'
+    force: false
+
+- name: Install Helm
+  ansible.builtin.command:
+    cmd: /tmp/get-helm.sh
+    creates: /usr/local/bin/helm
+  environment:
+    DESIRED_VERSION: "{{ helm_version }}"
+
+# -------------------------------------------------------------------------
+# Cilium CNI (via Helm)
+# kubernetes.core.helm requires the Python kubernetes package
+# -------------------------------------------------------------------------
+- name: Install pip3
+  ansible.builtin.apt:
+    name: python3-pip
+    state: present
+    update_cache: false
+
+- name: Install Python kubernetes package
+  ansible.builtin.pip:
+    name: kubernetes
+    state: present
+    executable: pip3
+    extra_args: --break-system-packages
+
+- name: Add Cilium Helm repository
+  kubernetes.core.helm_repository:
+    name: cilium
+    repo_url: https://helm.cilium.io/
+
+- name: Install Cilium
+  kubernetes.core.helm:
+    name: cilium
+    chart_ref: cilium/cilium
+    chart_version: "{{ cilium_version }}"
+    release_namespace: kube-system
+    create_namespace: false
+    kubeconfig: "/home/{{ ansible_user }}/.kube/config"
+    values:
+      ipam:
+        mode: kubernetes
+
+- name: Wait for Cilium DaemonSet rollout
+  ansible.builtin.command:
+    cmd: kubectl rollout status daemonset/cilium -n kube-system --timeout=300s
+  environment:
+    KUBECONFIG: "/home/{{ ansible_user }}/.kube/config"
+  changed_when: false
+
+# -------------------------------------------------------------------------
+# Join command — stored as a host fact, consumed by k8s_workers role
+# -------------------------------------------------------------------------
+- name: Generate kubeadm join command
+  ansible.builtin.command: kubeadm token create --print-join-command
+  register: join_command_raw
+  changed_when: false
+
+- name: Store join command as host fact
+  ansible.builtin.set_fact:
+    kubeadm_join_command: "{{ join_command_raw.stdout }}"

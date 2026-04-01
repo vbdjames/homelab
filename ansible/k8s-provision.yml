@@ -1,0 +1,15 @@
+---
+# Prepares all Kubernetes nodes for cluster initialization.
+# Run this on a fresh set of nodes before k8s-init.yml.
+#
+# Usage: ansible-playbook ansible/k8s-provision.yml
+
+- name: Base OS configuration
+  ansible.builtin.import_playbook: base.yml
+
+- name: Kubernetes node preparation
+  hosts: k8s_control_plane:k8s_workers
+  become: true
+  roles:
+    - k8s_node
+    - k8s_kubeadm

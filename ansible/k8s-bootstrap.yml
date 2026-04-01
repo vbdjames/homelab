@@ -1,0 +1,14 @@
+---
+# Bootstraps ArgoCD.
+# Run once after the cluster is healthy (all nodes Ready, Cilium healthy).
+#
+# After this playbook, ArgoCD is running and accessible. Apply the root
+# App-of-Apps manifest manually to activate GitOps.
+#
+# Usage: ansible-playbook ansible/k8s-bootstrap.yml
+
+- name: Bootstrap ArgoCD
+  hosts: k8s_control_plane
+  become: true
+  roles:
+    - k8s_argocd
