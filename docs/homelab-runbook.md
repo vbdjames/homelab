@@ -103,8 +103,11 @@ A record of every significant decision and its rationale. Update this section if
 
 ### On your local machine
 
+> ℹ️ Running in a devcontainer — `kubectl` and `argocd` CLI are installed via `.devcontainer/Dockerfile` and available automatically.
+
 - [x] Ansible installed (`pip install ansible`)
-- [ ] `kubectl` installed and on PATH
+- [x] `kubectl` installed and on PATH (devcontainer)
+- [x] `argocd` CLI installed and on PATH (devcontainer)
 - [x] SSH key deployed to all nodes (`ssh-copy-id user@NODE_IP`)
 - [x] Git repo cloned locally
 
@@ -265,7 +268,7 @@ cilium status
 
 ### Bootstrap Steps
 
-Steps 1–5 are handled by `ansible/k8s-bootstrap.yml`. Step 6 is a one-time manual command.
+Steps 1–5 are handled by `ansible/k8s-bootstrap.yml`. Steps 6–7 are one-time manual commands.
 
 1. **Create namespace** — `kubectl create namespace argocd`
 
@@ -278,7 +281,25 @@ Steps 1–5 are handled by `ansible/k8s-bootstrap.yml`. Step 6 is a one-time man
 
 5. **Print initial admin password** — displayed at the end of the playbook run
 
-6. **Activate GitOps — apply the root App-of-Apps (one time only):**
+6. **Create a dedicated deploy key for ArgoCD** — ArgoCD needs unattended Git access.
+   Do not use your personal SSH key; use a read-only deploy key scoped to this repo.
+
+   ```bash
+   # Generate a key with no passphrase
+   ssh-keygen -t ed25519 -C "argocd@homelab" -f ~/.ssh/argocd_homelab -N ""
+   ```
+
+   Then add the public key to GitHub:
+   > `github.com/vbdjames/homelab` → Settings → Deploy keys → Add deploy key
+   > Paste contents of `~/.ssh/argocd_homelab.pub` — leave "Allow write access" unchecked.
+
+   Register the private key with ArgoCD (stored internally as a cluster secret):
+   ```bash
+   argocd repo add git@github.com:vbdjames/homelab.git \
+     --ssh-private-key-path ~/.ssh/argocd_homelab
+   ```
+
+7. **Activate GitOps — apply the root App-of-Apps (one time only):**
    ```bash
    kubectl apply -f bootstrap/apps.yaml
    ```
@@ -290,7 +311,21 @@ Steps 1–5 are handled by `ansible/k8s-bootstrap.yml`. Step 6 is a one-time man
 ```bash
 ansible-playbook ansible/k8s-bootstrap.yml
 
-# Then activate GitOps:
+# Get the NodePort assigned to argocd-server
+kubectl get svc argocd-server -n argocd
+
+# Get the initial admin password
+kubectl -n argocd get secret argocd-initial-admin-secret \
+  -o jsonpath="{.data.password}" | base64 -d && echo
+
+# Log in to ArgoCD (--insecure skips TLS verification for the self-signed cert)
+argocd login 192.168.1.150:<nodeport> --username admin --insecure
+
+# Register the deploy key (see step 6 above):
+argocd repo add git@github.com:vbdjames/homelab.git \
+  --ssh-private-key-path ~/.ssh/argocd_homelab
+
+# Activate GitOps:
 kubectl apply -f bootstrap/apps.yaml
 ```
 
@@ -337,7 +372,13 @@ homelab/
 ├── bootstrap/
 │   └── apps.yaml              # root App-of-Apps — apply once to activate GitOps
 ├── apps/
-│   └── podinfo.yaml           # smoke-test workload; add new app manifests here
+│   ├── podinfo.yaml           # smoke-test workload
+│   ├── metallb.yaml           # MetalLB controller (Helm, wave 1)
+│   └── metallb-config.yaml    # IP pool + L2 config (wave 2, depends on metallb)
+├── infrastructure/
+│   └── metallb/
+│       ├── ipaddresspool.yaml  # assigns 192.168.1.200-254 to MetalLB
+│       └── l2advertisement.yaml # enables L2/ARP mode for that pool
 ├── docs/
 │   ├── homelab-runbook.md
 │   ├── router-setup-runbook.md
