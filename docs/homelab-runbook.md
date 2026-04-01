@@ -1,7 +1,7 @@
 # Homelab Kubernetes Cluster — Build Runbook
 
-> **Status:** Active — network finalized, Ansible roles built, cluster provisioning in progress
-> **Last updated:** 2026-03-30
+> **Status:** Active — cluster provisioning complete, ArgoCD bootstrapped, GitOps active
+> **Last updated:** 2026-04-01
 > **Stack:** Ubuntu 24.04 · kubeadm · Cilium · MetalLB · ArgoCD · Synology NAS (NFS)
 
 ---
@@ -261,46 +261,37 @@ cilium status
 
 **Goal:** Get ArgoCD running so it can manage all future cluster state from Git.
 **Playbook:** `ansible/k8s-bootstrap.yml`
-**Run once only** — after this, ArgoCD manages itself.
+**Run once only** — after this, ArgoCD manages itself and everything in `apps/`.
 
 ### Bootstrap Steps
 
-1. **Create namespace:**
-   ```bash
-   kubectl create namespace argocd
-   ```
+Steps 1–5 are handled by `ansible/k8s-bootstrap.yml`. Step 6 is a one-time manual command.
 
-2. **Install ArgoCD:**
-   ```bash
-   kubectl apply -n argocd \
-     -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
-   ```
+1. **Create namespace** — `kubectl create namespace argocd`
 
-3. **Wait for ArgoCD to be ready:**
-   ```bash
-   kubectl wait --for=condition=available deployment/argocd-server \
-     -n argocd --timeout=300s
-   ```
+2. **Install ArgoCD** — applies the upstream stable manifest
 
-4. **Get initial admin password:**
-   ```bash
-   kubectl -n argocd get secret argocd-initial-admin-secret \
-     -o jsonpath="{.data.password}" | base64 -d
-   ```
+3. **Wait for ArgoCD server** — polls until `argocd-server` deployment is Available
 
-5. **Expose ArgoCD UI** (temporary NodePort for initial access — MetalLB will handle this properly once deployed):
-   ```bash
-   kubectl patch svc argocd-server -n argocd \
-     -p '{"spec": {"type": "NodePort"}}'
-   ```
-   Access at `https://CONTROL_PLANE_IP:<nodeport>`
+4. **Expose ArgoCD UI** via NodePort (temporary — MetalLB will replace this once deployed):
+   Access at `https://192.168.1.150:<nodeport>`
 
-6. **Apply the App-of-Apps root application** to activate GitOps — see `notes/planned-infrastructure.md`.
+5. **Print initial admin password** — displayed at the end of the playbook run
+
+6. **Activate GitOps — apply the root App-of-Apps (one time only):**
+   ```bash
+   kubectl apply -f bootstrap/apps.yaml
+   ```
+   This tells ArgoCD to watch the `apps/` directory in this repo. From this point, every file
+   added to `apps/` is a deployment — push to Git and ArgoCD handles the rest.
 
 ### Run Phase 3
 
 ```bash
 ansible-playbook ansible/k8s-bootstrap.yml
+
+# Then activate GitOps:
+kubectl apply -f bootstrap/apps.yaml
 ```
 
 ### Verify ArgoCD
@@ -309,15 +300,14 @@ ansible-playbook ansible/k8s-bootstrap.yml
 # All ArgoCD pods should be Running
 kubectl get pods -n argocd
 
+# Root app and all child apps should show Synced + Healthy
+kubectl get applications -n argocd
+
 # Get the NodePort and access URL
 kubectl get svc argocd-server -n argocd
-
-# Confirm admin password is retrievable
-kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d && echo
 ```
 
-Access the UI at `https://192.168.1.150:<nodeport>` — username `admin`, password from above.
+Access the UI at `https://192.168.1.150:<nodeport>` — username `admin`, password from playbook output.
 
 ---
 
@@ -344,6 +334,10 @@ homelab/
 │   ├── k8s-init.yml
 │   ├── k8s-bootstrap.yml
 │   └── k8s-add-node.yml
+├── bootstrap/
+│   └── apps.yaml              # root App-of-Apps — apply once to activate GitOps
+├── apps/
+│   └── podinfo.yaml           # smoke-test workload; add new app manifests here
 ├── docs/
 │   ├── homelab-runbook.md
 │   ├── router-setup-runbook.md
@@ -356,6 +350,24 @@ homelab/
 ---
 
 ## 8. Runbook — Day 2 Operations
+
+### Deploy a New Application (GitOps workflow)
+
+1. Create an ArgoCD `Application` manifest in `apps/`:
+   ```bash
+   # Example: apps/my-app.yaml
+   # See apps/podinfo.yaml for a reference — Helm chart or raw manifests both work
+   ```
+2. Commit and push to `main`
+3. ArgoCD detects the new file within ~3 minutes and deploys it automatically
+
+To force an immediate sync without waiting:
+```bash
+# Via CLI
+argocd app sync my-app
+
+# Or trigger from the ArgoCD UI
+```
 
 ### Add a Worker Node
 
@@ -403,13 +415,22 @@ ansible-playbook ansible/k8s-add-node.yml -e target_host=hl-02
 
 ### Access ArgoCD UI
 
+ArgoCD is exposed via NodePort on `hl-01`. Get the port with:
 ```bash
-# Port-forward if no ingress yet
-kubectl port-forward svc/argocd-server -n argocd 8080:443
+kubectl get svc argocd-server -n argocd
+```
+Access at `https://192.168.1.150:<nodeport>` — username `admin`.
 
-# Get password
+Retrieve the password (valid until manually changed):
+```bash
 kubectl -n argocd get secret argocd-initial-admin-secret \
-  -o jsonpath="{.data.password}" | base64 -d
+  -o jsonpath="{.data.password}" | base64 -d && echo
+```
+
+If NodePort is unavailable, port-forward as a fallback:
+```bash
+kubectl port-forward svc/argocd-server -n argocd 8080:443
+# then access https://localhost:8080
 ```
 
 ---

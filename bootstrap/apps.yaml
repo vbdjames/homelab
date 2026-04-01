@@ -1,0 +1,27 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: apps
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: git@github.com:vbdjames/homelab.git
+    targetRevision: HEAD
+    # ArgoCD watches this directory for Application manifests.
+    # Every .yaml file in here becomes a managed application.
+    path: apps
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true   # removes Applications deleted from Git
+      selfHeal: true # reverts manual cluster changes — Git wins
+    syncOptions:
+      - CreateNamespace=true

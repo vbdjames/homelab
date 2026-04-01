@@ -1,0 +1,33 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: podinfo
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  source:
+    repoURL: https://stefanprodan.github.io/podinfo
+    chart: podinfo
+    targetRevision: "6.7.1"
+
+    helm:
+      values: |
+        # LoadBalancer so MetalLB assigns a real IP from your .200-.254 pool
+        service:
+          type: LoadBalancer
+        ui:
+          message: "homelab cluster — podinfo smoke test"
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: podinfo
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
