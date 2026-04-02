@@ -373,21 +373,35 @@ homelab/
 ├── bootstrap/
 │   └── apps.yaml              # root App-of-Apps — apply once to activate GitOps
 ├── apps/
-│   ├── podinfo.yaml           # smoke-test workload
-│   ├── metallb.yaml           # MetalLB controller (Helm, wave 1)
-│   ├── metallb-config.yaml    # IP pool + L2 config (wave 2, depends on metallb)
-│   └── sealed-secrets.yaml    # Sealed Secrets controller (wave 0 — deploys first)
+│   ├── podinfo.yaml             # smoke-test workload
+│   ├── metallb.yaml             # MetalLB controller (Helm, wave 1)
+│   ├── metallb-config.yaml      # IP pool + L2 config (wave 2)
+│   ├── sealed-secrets.yaml      # Sealed Secrets controller (wave 0)
+│   ├── cert-manager.yaml        # cert-manager controller (wave 3)
+│   ├── cert-manager-config.yaml # ClusterIssuer + Cloudflare token (wave 4)
+│   ├── ingress-nginx.yaml       # ingress controller (wave 5)
+│   ├── argocd-config.yaml       # ArgoCD ingress + insecure mode (wave 6)
+│   ├── nfs-csi.yaml             # NFS CSI driver (wave 1)
+│   └── nfs-csi-config.yaml      # NFS StorageClass (wave 2)
 ├── infrastructure/
-│   └── metallb/
-│       ├── ipaddresspool.yaml  # assigns 192.168.1.200-254 to MetalLB
-│       └── l2advertisement.yaml # enables L2/ARP mode for that pool
+│   ├── metallb/
+│   │   ├── ipaddresspool.yaml       # assigns 192.168.1.200-254 to MetalLB
+│   │   └── l2advertisement.yaml     # enables L2/ARP mode for that pool
+│   ├── cert-manager/
+│   │   ├── clusterissuer.yaml       # Let's Encrypt + Cloudflare DNS-01 solver
+│   │   └── cloudflare-api-token-sealed.yaml
+│   ├── argocd/
+│   │   ├── params.yaml              # sets argocd-server to insecure mode
+│   │   └── ingress.yaml             # routes argocd.fiddlestick.org via ingress-nginx
+│   └── nfs/
+│       └── storageclass.yaml        # default StorageClass backed by Synology NFS
 ├── docs/
 │   ├── homelab-runbook.md
-│   ├── cloudflare-dns-runbook.md  # Cloudflare setup, API token, DNS records
-│   ├── cert-manager-runbook.md    # Sealed secret workflow, cert-manager, ingress-nginx
+│   ├── cloudflare-dns-runbook.md    # Cloudflare setup, API token, DNS records
+│   ├── cert-manager-runbook.md      # Sealed secret workflow, cert-manager, ingress-nginx
+│   ├── nas-runbook.md               # NFS setup on Synology
 │   ├── router-setup-runbook.md
-│   ├── usb-prep-install-runbook.md
-│   └── nas-runbook.md
+│   └── usb-prep-install-runbook.md
 └── user-data/
     └── user-data-hl-{01-06}.yml
 ```

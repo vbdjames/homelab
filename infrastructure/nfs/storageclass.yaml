@@ -1,0 +1,19 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs
+  annotations:
+    # Make this the default StorageClass — workloads that don't specify one get NFS
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: 192.168.1.3
+  share: /volume1/kubernetes
+  # Each PVC gets its own subdirectory under /volume1/kubernetes
+  subDir: ${pvc.metadata.namespace}/${pvc.metadata.name}
+reclaimPolicy: Retain
+  # Retain — when a PVC is deleted, the data on the NAS is kept.
+  # Delete would remove the subdirectory automatically — too risky for homelab data.
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1
