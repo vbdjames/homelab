@@ -15,11 +15,24 @@ spec:
 
     helm:
       values: |
-        # LoadBalancer so MetalLB assigns a real IP from your .200-.254 pool
         service:
-          type: LoadBalancer
+          type: ClusterIP
         ui:
           message: "homelab cluster — podinfo smoke test"
+        ingress:
+          enabled: true
+          className: nginx
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-prod
+          hosts:
+            - host: podinfo.fiddlestick.org
+              paths:
+                - path: /
+                  pathType: Prefix
+          tls:
+            - secretName: podinfo-tls
+              hosts:
+                - podinfo.fiddlestick.org
 
   destination:
     server: https://kubernetes.default.svc
