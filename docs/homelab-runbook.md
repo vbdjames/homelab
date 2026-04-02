@@ -108,6 +108,7 @@ A record of every significant decision and its rationale. Update this section if
 - [x] Ansible installed (`pip install ansible`)
 - [x] `kubectl` installed and on PATH (devcontainer)
 - [x] `argocd` CLI installed and on PATH (devcontainer)
+- [x] `kubeseal` CLI installed and on PATH (devcontainer)
 - [x] SSH key deployed to all nodes (`ssh-copy-id user@NODE_IP`)
 - [x] Git repo cloned locally
 
@@ -374,13 +375,16 @@ homelab/
 ├── apps/
 │   ├── podinfo.yaml           # smoke-test workload
 │   ├── metallb.yaml           # MetalLB controller (Helm, wave 1)
-│   └── metallb-config.yaml    # IP pool + L2 config (wave 2, depends on metallb)
+│   ├── metallb-config.yaml    # IP pool + L2 config (wave 2, depends on metallb)
+│   └── sealed-secrets.yaml    # Sealed Secrets controller (wave 0 — deploys first)
 ├── infrastructure/
 │   └── metallb/
 │       ├── ipaddresspool.yaml  # assigns 192.168.1.200-254 to MetalLB
 │       └── l2advertisement.yaml # enables L2/ARP mode for that pool
 ├── docs/
 │   ├── homelab-runbook.md
+│   ├── cloudflare-dns-runbook.md  # Cloudflare setup, API token, DNS records
+│   ├── cert-manager-runbook.md    # Sealed secret workflow, cert-manager, ingress-nginx
 │   ├── router-setup-runbook.md
 │   ├── usb-prep-install-runbook.md
 │   └── nas-runbook.md

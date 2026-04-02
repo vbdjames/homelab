@@ -16,3 +16,9 @@ RUN curl -fsSL "https://dl.k8s.io/release/v1.33.0/bin/linux/amd64/kubectl" \
 RUN curl -fsSL "https://github.com/argoproj/argo-cd/releases/latest/download/argocd-linux-amd64" \
     -o /usr/local/bin/argocd \
     && chmod +x /usr/local/bin/argocd
+
+# Install kubeseal CLI — version must match the sealed-secrets controller version in apps/sealed-secrets.yaml
+RUN curl -fsSL "https://github.com/bitnami-labs/sealed-secrets/releases/download/v0.27.3/kubeseal-0.27.3-linux-amd64.tar.gz" \
+    | tar -xz kubeseal \
+    && mv kubeseal /usr/local/bin/kubeseal \
+    && chmod +x /usr/local/bin/kubeseal
