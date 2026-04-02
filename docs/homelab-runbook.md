@@ -398,7 +398,7 @@ homelab/
 │   ├── nfs/
 │   │   └── storageclass.yaml        # default StorageClass backed by Synology NFS
 │   └── tailscale/
-│       └── auth-sealed.yaml         # sealed Tailscale auth key
+│       └── operator-oauth-sealed.yaml  # sealed Tailscale OAuth credentials
 ├── docs/
 │   ├── homelab-runbook.md
 │   ├── cloudflare-dns-runbook.md    # Cloudflare setup, API token, DNS records

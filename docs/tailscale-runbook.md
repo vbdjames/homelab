@@ -1,6 +1,6 @@
 # Tailscale Runbook
 
-> **Status:** In progress — auth key sealed, operator pending deployment
+> **Status:** In progress — OAuth credentials sealed, operator pending deployment
 > **Last updated:** 2026-04-02
 > **Dependencies:** Sealed Secrets controller running
 
@@ -15,39 +15,42 @@ any device on the tailnet with valid HTTPS certs issued by Tailscale.
 This provides remote access to all homelab services without opening ports on the
 Verizon router or relying on the `*.fiddlestick.org` ingress path.
 
+The operator authenticates via an OAuth client (Trust Credentials) created at
+`login.tailscale.com/admin` — no expiry, no rotation needed.
+
 ---
 
-## Auth Key Rotation (every 90 days)
+## Initial Setup
 
-> ⚠️ Personal Tailscale accounts cap auth keys at 90 days. The operator loses tailnet
-> access if the key expires — set a calendar reminder before the expiry date.
+### Create OAuth credentials
 
-To rotate:
-1. Generate a new auth key at `login.tailscale.com` → **Settings → Auth keys**
-   - Reusable: yes, Ephemeral: yes, Expiry: 90 days
-2. Re-seal and overwrite the existing secret:
-   ```bash
-   kubectl create secret generic tailscale-operator-auth \
-     --namespace tailscale \
-     --from-literal=TS_AUTHKEY=<NEW_KEY> \
-     --dry-run=client -o yaml | \
-   kubeseal \
-     --controller-name sealed-secrets-controller \
-     --controller-namespace sealed-secrets \
-     --format yaml \
-     > infrastructure/tailscale/auth-sealed.yaml
-   ```
-3. Commit and push — ArgoCD deploys the updated secret automatically
-4. Restart the operator to pick up the new key:
-   ```bash
-   kubectl rollout restart deployment/operator -n tailscale
-   ```
+1. Go to `login.tailscale.com/admin` → **Settings → Trust Credentials**
+2. Create a new OAuth client named `homelab-k8s-operator`
+3. Scopes required: **Devices — write**, **Auth keys — write**
+4. Copy the **Client ID** and **Client Secret**
+
+### Seal the credentials
+
+```bash
+kubectl create secret generic operator-oauth \
+  --namespace tailscale \
+  --from-literal=client_id=<CLIENT_ID> \
+  --from-literal=client_secret=<CLIENT_SECRET> \
+  --dry-run=client -o yaml | \
+kubeseal \
+  --controller-name sealed-secrets-controller \
+  --controller-namespace sealed-secrets \
+  --format yaml \
+  > infrastructure/tailscale/operator-oauth-sealed.yaml
+```
+
+Commit `infrastructure/tailscale/operator-oauth-sealed.yaml` — safe to commit.
 
 ---
 
 ## Exposing a Service on Tailscale
 
-Annotate any `Service` with `tailscale.com/expose: "true"` and optionally set a hostname:
+Annotate any `Service` with `tailscale.com/expose: "true"` and set a hostname:
 
 ```yaml
 annotations:
@@ -68,50 +71,25 @@ few seconds the service is accessible at `https://grafana` from any tailnet devi
 
 ---
 
-## kubectl Access via Tailscale
-
-The Kubernetes API server can be exposed on the tailnet, enabling `kubectl` from anywhere:
-
-```yaml
-# infrastructure/tailscale/apiserver-proxy.yaml
-apiVersion: v1
-kind: Service
-metadata:
-  name: apiserver-proxy
-  namespace: tailscale
-  annotations:
-    tailscale.com/expose: "true"
-    tailscale.com/hostname: "k8s-homelab"
-spec:
-  type: ExternalName
-  externalName: kubernetes.default.svc.cluster.local
-  ports:
-    - port: 443
-      targetPort: 443
-```
-
-Then update your local kubeconfig to point at the Tailscale hostname instead of the
-node IP — works from anywhere on the tailnet.
-
----
-
 ## Verify
 
 ```bash
 # Operator pod running
 kubectl get pods -n tailscale
 
+# Proxy pods for exposed services
+kubectl get pods -n tailscale
+
 # Devices registered on tailnet
-# Check login.tailscale.com → Machines — should see new entries tagged k8s
+# Check login.tailscale.com/admin → Machines — should see entries tagged k8s
 ```
 
 ---
 
 ## Checklist
 
-- [x] Auth key generated (expires 2026-07-01 — rotate before this date) ✅
-- [x] Auth key sealed and committed ✅
+- [x] OAuth credentials created (Trust Credentials) ✅
+- [x] OAuth credentials sealed and committed ✅
 - [ ] Tailscale operator deployed
 - [ ] Devices visible in Tailscale admin console
 - [ ] First service exposed and accessible from tailnet
-- [ ] Auth key rotation reminder set in calendar
