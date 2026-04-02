@@ -400,6 +400,7 @@ homelab/
 │   ├── cloudflare-dns-runbook.md    # Cloudflare setup, API token, DNS records
 │   ├── cert-manager-runbook.md      # Sealed secret workflow, cert-manager, ingress-nginx
 │   ├── nas-runbook.md               # NFS setup on Synology
+│   ├── observability-runbook.md     # kube-prometheus-stack, Loki, Grafana
 │   ├── router-setup-runbook.md
 │   └── usb-prep-install-runbook.md
 └── user-data/

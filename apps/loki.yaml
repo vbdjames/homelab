@@ -1,0 +1,44 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Wave 8 — after kube-prometheus-stack (wave 7) so Grafana is ready to add Loki as a datasource
+    argocd.argoproj.io/sync-wave: "8"
+spec:
+  project: default
+
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: loki-stack
+    targetRevision: "2.10.2"
+    helm:
+      values: |
+        loki:
+          persistence:
+            enabled: true
+            storageClassName: nfs
+            size: 10Gi
+          config:
+            limits_config:
+              retention_period: 720h  # 30 days
+
+        promtail:
+          enabled: true  # DaemonSet that ships pod logs to Loki
+
+        grafana:
+          enabled: false  # use the Grafana from kube-prometheus-stack
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

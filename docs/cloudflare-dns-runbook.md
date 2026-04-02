@@ -64,6 +64,7 @@ All homelab services share a single ingress-nginx IP (assigned by MetalLB). Add 
 |---|---|---|---|
 | `argocd.fiddlestick.org` | A | `192.168.1.201` | ArgoCD UI |
 | `podinfo.fiddlestick.org` | A | `192.168.1.201` | Smoke-test workload |
+| `grafana.fiddlestick.org` | A | `192.168.1.201` | Grafana dashboards |
 
 Add entries to this table as new services are deployed. All records point at the same ingress IP.
 
@@ -79,6 +80,7 @@ Go to the router's DNS settings and add one entry per service:
 |---|---|
 | `argocd.fiddlestick.org` | `192.168.1.201` |
 | `podinfo.fiddlestick.org` | `192.168.1.201` |
+| `grafana.fiddlestick.org` | `192.168.1.201` |
 
 > ℹ️ When Pi-hole or pfSense takes over DNS, these router entries can be removed and replaced with a single wildcard record (`*.fiddlestick.org` → `192.168.1.201`) in Pi-hole.
 
