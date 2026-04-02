@@ -20,6 +20,18 @@ spec:
     server: https://kubernetes.default.svc
     namespace: metallb-system
 
+  # Ignore the caBundle field on webhook configs — MetalLB injects this at
+  # runtime and ArgoCD would otherwise perpetually show it as OutOfSync.
+  ignoreDifferences:
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jsonPointers:
+        - /webhooks/0/clientConfig/caBundle
+    - group: admissionregistration.k8s.io
+      kind: ValidatingWebhookConfiguration
+      jsonPointers:
+        - /webhooks/1/clientConfig/caBundle
+
   syncPolicy:
     automated:
       prune: true
