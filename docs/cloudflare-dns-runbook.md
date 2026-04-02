@@ -1,6 +1,6 @@
 # Cloudflare DNS Setup Runbook
 
-> **Status:** Cloudflare configured — API token ready, cluster integration pending
+> **Status:** Complete — ingress IP `192.168.1.201`, DNS records active
 > **Last updated:** 2026-04-01
 > **Purpose:** Delegate DNS for `fiddlestick.org` to Cloudflare so cert-manager can automate Let's Encrypt wildcard certificates via the DNS-01 challenge.
 
@@ -58,12 +58,12 @@ Store the token temporarily in a safe place (password manager). It will be store
 
 All homelab services share a single ingress-nginx IP (assigned by MetalLB). Add one A record per service pointing at that IP.
 
-> ℹ️ The ingress-nginx external IP is determined after deployment — run `kubectl get svc -n ingress-nginx` to find it.
+> ℹ️ ingress-nginx external IP: `192.168.1.201` (assigned by MetalLB). All records point here.
 
 | Hostname | Type | Value | Notes |
 |---|---|---|---|
-| `argocd.fiddlestick.org` | A | `<ingress IP>` | ArgoCD UI |
-| `podinfo.fiddlestick.org` | A | `<ingress IP>` | Smoke-test workload |
+| `argocd.fiddlestick.org` | A | `192.168.1.201` | ArgoCD UI |
+| `podinfo.fiddlestick.org` | A | `192.168.1.201` | Smoke-test workload |
 
 Add entries to this table as new services are deployed. All records point at the same ingress IP.
 
@@ -78,5 +78,5 @@ Add entries to this table as new services are deployed. All records point at the
 - [x] Nameservers updated at Hover ✅
 - [x] Propagation verified (`dig NS fiddlestick.org`) ✅
 - [x] API token created and stored in password manager ✅
-- [ ] API token stored as Sealed Secret in cluster (see cert-manager runbook)
-- [ ] Ingress IP determined and DNS records added
+- [x] API token stored as Sealed Secret in cluster ✅
+- [x] Ingress IP determined (`192.168.1.201`) and DNS records added ✅

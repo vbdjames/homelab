@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: argocd-config
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Wave 6 — after ingress-nginx (wave 5) is ready to serve traffic
+    argocd.argoproj.io/sync-wave: "6"
+spec:
+  project: default
+
+  source:
+    repoURL: git@github.com:vbdjames/homelab.git
+    targetRevision: HEAD
+    path: infrastructure/argocd
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
