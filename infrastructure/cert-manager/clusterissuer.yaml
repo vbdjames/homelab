@@ -1,0 +1,18 @@
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    server: https://acme-v02.api.letsencrypt.org/directory
+    email: vbdjames@gmail.com
+    privateKeySecretRef:
+      # cert-manager stores the ACME account private key here
+      name: letsencrypt-prod-account-key
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              # This secret is created by the SealedSecret we committed
+              name: cloudflare-api-token
+              key: api-token
