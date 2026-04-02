@@ -416,6 +416,19 @@ homelab/
 
 ## 8. Runbook — Day 2 Operations
 
+### Rotate or Update a Sealed Secret
+
+Updating a `SealedSecret` does **not** automatically restart the pods that use it.
+After committing and pushing a new sealed secret, manually restart the affected deployment:
+
+```bash
+kubectl rollout restart deployment/<name> -n <namespace>
+```
+
+ArgoCD will sync the new secret, but pods only pick up secret changes on restart.
+
+---
+
 ### Deploy a New Application (GitOps workflow)
 
 1. Create an ArgoCD `Application` manifest in `apps/`:
