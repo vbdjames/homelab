@@ -1,0 +1,28 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale-config
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Wave 2 — after tailscale-operator (wave 1) is running
+    argocd.argoproj.io/sync-wave: "2"
+spec:
+  project: default
+
+  source:
+    repoURL: git@github.com:vbdjames/homelab.git
+    targetRevision: HEAD
+    path: infrastructure/tailscale
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

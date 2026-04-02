@@ -382,7 +382,9 @@ homelab/
 │   ├── ingress-nginx.yaml       # ingress controller (wave 5)
 │   ├── argocd-config.yaml       # ArgoCD ingress + insecure mode (wave 6)
 │   ├── nfs-csi.yaml             # NFS CSI driver (wave 1)
-│   └── nfs-csi-config.yaml      # NFS StorageClass (wave 2)
+│   ├── nfs-csi-config.yaml      # NFS StorageClass (wave 2)
+│   ├── tailscale-operator.yaml  # Tailscale operator (wave 1)
+│   └── tailscale-config.yaml    # auth secret + exposed services (wave 2)
 ├── infrastructure/
 │   ├── metallb/
 │   │   ├── ipaddresspool.yaml       # assigns 192.168.1.200-254 to MetalLB
@@ -393,14 +395,17 @@ homelab/
 │   ├── argocd/
 │   │   ├── params.yaml              # sets argocd-server to insecure mode
 │   │   └── ingress.yaml             # routes argocd.fiddlestick.org via ingress-nginx
-│   └── nfs/
-│       └── storageclass.yaml        # default StorageClass backed by Synology NFS
+│   ├── nfs/
+│   │   └── storageclass.yaml        # default StorageClass backed by Synology NFS
+│   └── tailscale/
+│       └── auth-sealed.yaml         # sealed Tailscale auth key
 ├── docs/
 │   ├── homelab-runbook.md
 │   ├── cloudflare-dns-runbook.md    # Cloudflare setup, API token, DNS records
 │   ├── cert-manager-runbook.md      # Sealed secret workflow, cert-manager, ingress-nginx
 │   ├── nas-runbook.md               # NFS setup on Synology
 │   ├── observability-runbook.md     # kube-prometheus-stack, Loki, Grafana
+│   └── tailscale-runbook.md         # Tailscale operator, auth key rotation, exposing services
 │   ├── router-setup-runbook.md
 │   └── usb-prep-install-runbook.md
 └── user-data/

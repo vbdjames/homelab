@@ -1,0 +1,34 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tailscale-operator
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+  annotations:
+    # Wave 1 — infrastructure-level, deploys alongside MetalLB and NFS
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: default
+
+  source:
+    repoURL: https://pkgs.tailscale.com/helmcharts
+    chart: tailscale-operator
+    targetRevision: "1.82.0"
+    helm:
+      values: |
+        operatorConfig:
+          authSecretName: tailscale-operator-auth
+          defaultTags:
+            - tag:k8s
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tailscale
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
