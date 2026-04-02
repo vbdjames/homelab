@@ -18,7 +18,10 @@ spec:
     helm:
       values: |
         grafana:
-          adminSecret: grafana-admin  # references the SealedSecret
+          admin:
+            existingSecret: grafana-admin
+            userKey: admin-user
+            passwordKey: admin-password
           ingress:
             enabled: true
             ingressClassName: nginx
