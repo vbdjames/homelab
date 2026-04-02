@@ -1,6 +1,6 @@
 # Observability Runbook
 
-> **Status:** In progress — sealed secret committed, DNS pending
+> **Status:** Complete — Prometheus, Grafana, Loki, and Promtail all running
 > **Last updated:** 2026-04-02
 > **Stack:** kube-prometheus-stack (Prometheus + Grafana + Alertmanager) + Loki + Promtail
 > **Dependencies:** Sealed Secrets controller running, NFS StorageClass available, ingress-nginx + cert-manager deployed
@@ -44,6 +44,13 @@ Store the plaintext password in your password manager.
 
 ## Step 2 — Deploy via ArgoCD
 
+> ℹ️ Loki is provisioned as a Grafana datasource via `additionalDataSources` in the
+> kube-prometheus-stack Helm values — do not add it manually via the UI. The built-in
+> health check will show as unhealthy (Grafana sends PromQL, Loki expects LogQL) but
+> the datasource works correctly for log queries.
+
+
+
 Push to Git — ArgoCD deploys in wave order:
 - **Wave 7** — kube-prometheus-stack (Prometheus + Grafana + Alertmanager)
 - **Wave 8** — Loki + Promtail
@@ -82,8 +89,8 @@ kubectl get pvc -n monitoring
 
 - [x] Grafana admin password sealed and committed ✅
 - [x] `grafana.fiddlestick.org` DNS records added (Cloudflare + router) ✅
-- [ ] kube-prometheus-stack deployed and Grafana accessible
-- [ ] Loki + Promtail deployed
-- [ ] Prometheus targets all healthy
-- [ ] Loki receiving logs from pods
-- [ ] PVCs bound and data persisting to NFS
+- [x] kube-prometheus-stack deployed and Grafana accessible ✅
+- [x] Loki + Promtail deployed ✅
+- [x] Prometheus targets all healthy ✅
+- [x] Loki receiving logs from pods ✅
+- [x] PVCs bound and data persisting to NFS ✅
