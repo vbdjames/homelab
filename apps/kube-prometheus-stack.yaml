@@ -22,10 +22,6 @@ spec:
             existingSecret: grafana-admin
             userKey: admin-user
             passwordKey: admin-password
-          service:
-            annotations:
-              tailscale.com/expose: "true"
-              tailscale.com/hostname: "grafana"
           additionalDataSources:
             - name: Loki
               type: loki
