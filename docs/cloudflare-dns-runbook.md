@@ -67,7 +67,20 @@ All homelab services share a single ingress-nginx IP (assigned by MetalLB). Add 
 
 Add entries to this table as new services are deployed. All records point at the same ingress IP.
 
-> ⚠️ These are real public DNS records resolving to a private LAN IP (`192.168.1.2xx`). They will only work on your LAN (or via Tailscale). That is intentional — the domain is used for cert issuance only, not for public exposure.
+> ⚠️ These are real public DNS records resolving to a private LAN IP (`192.168.1.201`). They will only work on your LAN (or via Tailscale). That is intentional — the domain is used for cert issuance only, not for public exposure.
+
+### Local DNS records (Verizon G1100 router)
+
+Until Pi-hole or pfSense is in place, each service also needs a matching entry in the Verizon router's local DNS so LAN devices can resolve it. The router does not use Cloudflare for local lookups.
+
+Go to the router's DNS settings and add one entry per service:
+
+| Hostname | IP |
+|---|---|
+| `argocd.fiddlestick.org` | `192.168.1.201` |
+| `podinfo.fiddlestick.org` | `192.168.1.201` |
+
+> ℹ️ When Pi-hole or pfSense takes over DNS, these router entries can be removed and replaced with a single wildcard record (`*.fiddlestick.org` → `192.168.1.201`) in Pi-hole.
 
 ---
 
@@ -79,4 +92,4 @@ Add entries to this table as new services are deployed. All records point at the
 - [x] Propagation verified (`dig NS fiddlestick.org`) ✅
 - [x] API token created and stored in password manager ✅
 - [x] API token stored as Sealed Secret in cluster ✅
-- [x] Ingress IP determined (`192.168.1.201`) and DNS records added ✅
+- [x] Ingress IP determined (`192.168.1.201`) and DNS records added ✅t push
