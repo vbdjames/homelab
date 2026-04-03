@@ -1,6 +1,6 @@
 # Tailscale Runbook
 
-> **Status:** In progress — OAuth credentials sealed, operator pending deployment
+> **Status:** Active — operator running, Grafana exposed at grafana.taila8768.ts.net
 > **Last updated:** 2026-04-02
 > **Dependencies:** Sealed Secrets controller running
 
@@ -50,16 +50,33 @@ Commit `infrastructure/tailscale/operator-oauth-sealed.yaml` — safe to commit.
 
 ## Exposing a Service on Tailscale
 
-Annotate any `Service` with `tailscale.com/expose: "true"` and set a hostname:
+Use a Kubernetes `Ingress` resource with `ingressClassName: tailscale` — **not** service
+annotations. Service annotations only support HTTP; the Ingress approach gets a valid
+Tailscale TLS cert automatically.
 
 ```yaml
-annotations:
-  tailscale.com/expose: "true"
-  tailscale.com/hostname: "grafana"  # appears as "grafana" in MagicDNS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grafana
+  namespace: monitoring  # must be in the same namespace as the target service
+spec:
+  ingressClassName: tailscale
+  tls:
+    - hosts:
+        - grafana  # becomes grafana.taila8768.ts.net
+  defaultBackend:
+    service:
+      name: kube-prometheus-stack-grafana
+      port:
+        number: 80
 ```
 
-The operator creates a Tailscale proxy pod and registers it on the tailnet. Within a
-few seconds the service is accessible at `https://grafana` from any tailnet device.
+Place the manifest in `infrastructure/<namespace>/` so the relevant ArgoCD app picks it up.
+
+> ⚠️ If a proxy pod gets into a CrashLoopBackOff after manual intervention, do a full
+> clean slate: delete the StatefulSet, both secrets, and the Ingress, then reapply the
+> Ingress. The operator will recreate everything cleanly.
 
 ---
 
@@ -67,7 +84,7 @@ few seconds the service is accessible at `https://grafana` from any tailnet devi
 
 | Service | MagicDNS hostname | Namespace |
 |---|---|---|
-| _(none yet — add as configured)_ | | |
+| Grafana | `grafana.taila8768.ts.net` | monitoring |
 
 ---
 
@@ -90,6 +107,6 @@ kubectl get pods -n tailscale
 
 - [x] OAuth credentials created (Trust Credentials) ✅
 - [x] OAuth credentials sealed and committed ✅
-- [ ] Tailscale operator deployed
-- [ ] Devices visible in Tailscale admin console
-- [ ] First service exposed and accessible from tailnet
+- [x] Tailscale operator deployed ✅
+- [x] Devices visible in Tailscale admin console ✅
+- [x] First service exposed — Grafana at grafana.taila8768.ts.net ✅
