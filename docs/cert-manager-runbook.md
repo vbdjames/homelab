@@ -1,7 +1,7 @@
 # cert-manager + Ingress Runbook
 
-> **Status:** Pending
-> **Last updated:** 2026-04-02
+> **Status:** Complete — cert-manager and ingress-nginx deployed, wildcard TLS via Let's Encrypt active
+> **Last updated:** 2026-04-03
 > **Dependencies:** Sealed Secrets controller running, Cloudflare API token in hand (see cloudflare-dns-runbook.md)
 
 ---
@@ -99,9 +99,9 @@ kubectl get svc -n ingress-nginx
 
 ## Checklist
 
-- [ ] Sealed Secrets controller running
-- [ ] Cloudflare API token sealed and committed (`infrastructure/cert-manager/cloudflare-api-token-sealed.yaml`)
-- [ ] cert-manager deployed and ClusterIssuer ready
-- [ ] ingress-nginx deployed and external IP assigned
-- [ ] Cloudflare DNS records added for each service
-- [ ] Certificates issued and Ready
+- [x] Sealed Secrets controller running ✅
+- [x] Cloudflare API token sealed and committed ✅
+- [x] cert-manager deployed and ClusterIssuer ready ✅
+- [x] ingress-nginx deployed and external IP assigned (`192.168.1.201`) ✅
+- [x] Cloudflare DNS records added for each service ✅
+- [x] Certificates issued and Ready ✅

@@ -1,7 +1,7 @@
 # Homelab Kubernetes Cluster — Build Runbook
 
-> **Status:** Active — cluster provisioning complete, ArgoCD bootstrapped, GitOps active
-> **Last updated:** 2026-04-01
+> **Status:** Active — cluster running, GitOps active, observability and Tailscale deployed
+> **Last updated:** 2026-04-03
 > **Stack:** Ubuntu 24.04 · kubeadm · Cilium · MetalLB · ArgoCD · Synology NAS (NFS)
 
 ---

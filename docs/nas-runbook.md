@@ -15,7 +15,7 @@ This runbook covers the Kubernetes-relevant NAS configuration — NFS setup, sha
 
 ## Kubernetes Storage Integration
 
-> **Status:** NFS — CSI driver to be deployed via ArgoCD, NAS-side config documented below.
+> **Status:** Complete — NFS configured on Synology, CSI driver deployed, StorageClass active as cluster default
 
 **Approach:** NFS via the [NFS CSI driver](https://github.com/kubernetes-csi/csi-driver-nfs). A dedicated share (`/volume1/kubernetes`) on the NAS is exported to the cluster nodes. The CSI driver provisions subdirectories automatically for each PersistentVolumeClaim.
 
@@ -84,9 +84,9 @@ showmount -e 192.168.1.3
 
 ## Checklist
 
-- [ ] NFS service enabled (NFSv4.1)
-- [ ] `kubernetes` shared folder created on Volume 1
-- [ ] NFS export configured for `192.168.1.0/24` with no root squash
-- [ ] Export verified with `showmount -e 192.168.1.3`
-- [ ] NFS CSI driver deployed in cluster (see homelab-runbook.md)
-- [ ] StorageClass verified — test PVC provisions successfully
+- [x] NFS service enabled (NFSv4.1) ✅
+- [x] `kubernetes` shared folder created on Volume 1 ✅
+- [x] NFS export configured for `192.168.1.0/24` with no root squash ✅
+- [x] Export verified with `showmount -e 192.168.1.3` ✅
+- [x] NFS CSI driver deployed in cluster ✅
+- [x] StorageClass verified — test PVC provisioned successfully ✅
