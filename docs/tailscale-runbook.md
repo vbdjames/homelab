@@ -85,6 +85,7 @@ Place the manifest in `infrastructure/<namespace>/` so the relevant ArgoCD app p
 | Service | MagicDNS hostname | Namespace |
 |---|---|---|
 | Grafana | `grafana.taila8768.ts.net` | monitoring |
+| ArgoCD | `argocd.taila8768.ts.net` | argocd |
 
 ---
 
