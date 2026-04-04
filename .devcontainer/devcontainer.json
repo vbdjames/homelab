@@ -10,7 +10,11 @@
     "ghcr.io/devcontainers-extra/features/ansible:2": {},
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
-  "postCreateCommand": "mkdir -p ~/.kube && ssh -o StrictHostKeyChecking=no ansible@192.168.1.150 'sudo cat /etc/kubernetes/admin.conf' > ~/.kube/config && chmod 600 ~/.kube/config && echo 'source /workspaces/homelab/.devcontainer/bashrc' >> ~/.bashrc",
+  "postCreateCommand": "echo 'source /workspaces/homelab/.devcontainer/bashrc' >> ~/.bashrc",
+  "mounts": [
+    "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
+    "source=${localEnv:HOME}/.kube,target=/home/vscode/.kube,type=bind,consistency=cached"
+  ],
   "customizations": {
     "vscode": {
       "extensions": [
