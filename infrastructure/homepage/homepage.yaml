@@ -117,9 +117,14 @@ spec:
           image: ghcr.io/gethomepage/homepage:v1.12.3
           ports:
             - containerPort: 3000
+          env:
+            - name: HOMEPAGE_ALLOWED_HOSTS
+              value: home.fiddlestick.org
           volumeMounts:
             - name: config
               mountPath: /app/config
+            - name: logs
+              mountPath: /app/config/logs
           resources:
             requests:
               memory: 128Mi
@@ -130,6 +135,8 @@ spec:
         - name: config
           configMap:
             name: homepage-config
+        - name: logs
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
