@@ -413,6 +413,13 @@ homelab/
 
 ## 8. Runbook — Day 2 Operations
 
+### Backups
+
+See [backup-runbook.md](backup-runbook.md) for what is and isn't covered by the NAS/iDrive backup,
+the Sealed Secrets decryption key export procedure, Pi-hole Teleporter export, and key rotation guidance.
+
+---
+
 ### Rotate or Update a Sealed Secret
 
 Updating a `SealedSecret` does **not** automatically restart the pods that use it.
