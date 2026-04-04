@@ -66,6 +66,10 @@ spec:
               value: "0"
             - name: PGID
               value: "0"
+            # Required for NFS-backed volumes — switches ingest/metadata watchers
+            # from inotify (broken on NFS) to polling, and disables SQLite WAL mode
+            - name: NETWORK_SHARE_MODE
+              value: "true"
           ports:
             - containerPort: 8083
           volumeMounts:
