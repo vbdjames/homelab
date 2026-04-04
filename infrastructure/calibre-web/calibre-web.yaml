@@ -72,7 +72,7 @@ spec:
             - name: config
               mountPath: /config
             - name: books
-              mountPath: /books
+              mountPath: /calibre-library
             - name: ingest
               mountPath: /cwa-book-ingest
           resources:
