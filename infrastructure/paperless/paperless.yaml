@@ -68,6 +68,9 @@ spec:
       labels:
         app: paperless
     spec:
+      # Disable automatic injection of service env vars — Kubernetes injects
+      # PAPERLESS_PORT=tcp://... which conflicts with paperless-ngx's own var
+      enableServiceLinks: false
       containers:
         - name: paperless
           image: ghcr.io/paperless-ngx/paperless-ngx:2.13
