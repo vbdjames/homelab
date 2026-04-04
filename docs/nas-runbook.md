@@ -82,6 +82,27 @@ showmount -e 192.168.1.3
 
 ---
 
+## Known Limitation — Non-root UID Access
+
+Synology's NFS server maps client UIDs against its own user database. UIDs that don't
+correspond to a Synology user (e.g. uid 1000 from a container running as a non-root app
+user) are effectively denied access, even if file permissions appear to allow it.
+
+**Symptom:** `Permission denied` on NFS-mounted directories from a container running as a
+non-root UID, despite the directory showing `0777` permissions when inspected as root.
+
+**Workarounds (pick one):**
+- **Run the container as root** — use `USERMAP_UID=0` / `USERMAP_GID=0` if the app
+  supports uid remapping (e.g. Paperless-ngx), or set `securityContext.runAsUser: 0`.
+  Works via `no_root_squash` on the export. Simple but runs the app as root.
+- **Create a matching Synology user** — add a user in DSM with the same UID as the
+  container user and grant it access to the `kubernetes` share. Proper fix but requires
+  NAS UI changes for each new UID.
+
+Paperless-ngx uses `USERMAP_UID=0` as its workaround.
+
+---
+
 ## Checklist
 
 - [x] NFS service enabled (NFSv4.1) ✅
