@@ -405,7 +405,8 @@ homelab/
 │   ├── cert-manager-runbook.md      # Sealed secret workflow, cert-manager, ingress-nginx
 │   ├── nas-runbook.md               # NFS setup on Synology
 │   ├── observability-runbook.md     # kube-prometheus-stack, Loki, Grafana
-│   └── tailscale-runbook.md         # Tailscale operator, auth key rotation, exposing services
+│   ├── tailscale-runbook.md         # Tailscale operator, subnet router, ACLs
+│   ├── proxmox-runbook.md           # Proxmox install, Pi-hole LXC, DNS cutover
 │   ├── router-setup-runbook.md
 │   └── usb-prep-install-runbook.md
 └── user-data/
@@ -431,19 +432,17 @@ ArgoCD will sync the new secret, but pods only pick up secret changes on restart
 
 ### Deploy a New Application (GitOps workflow)
 
-1. Create an ArgoCD `Application` manifest in `apps/`:
-   ```bash
-   # Example: apps/my-app.yaml
-   # See apps/podinfo.yaml for a reference — Helm chart or raw manifests both work
-   ```
-2. Commit and push to `main`
-3. ArgoCD detects the new file within ~3 minutes and deploys it automatically
+**Checklist for every new service:**
+
+- [ ] Add a Cloudflare A record: `<service>.fiddlestick.org` → `192.168.1.201`
+- [ ] Add a Pi-hole DNS record: `<service>.fiddlestick.org` → `192.168.1.201` (**Settings → DNS Records**)
+- [ ] Create an ArgoCD `Application` manifest in `apps/` (see `apps/podinfo.yaml` for reference)
+- [ ] Add an `Ingress` resource with `cert-manager.io/cluster-issuer: letsencrypt-prod` annotation
+- [ ] Commit and push to `main` — ArgoCD deploys within ~3 minutes
 
 To force an immediate sync without waiting:
 ```bash
-# Via CLI
 argocd app sync my-app
-
 # Or trigger from the ArgoCD UI
 ```
 

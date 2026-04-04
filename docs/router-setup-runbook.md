@@ -22,6 +22,8 @@ Server IPs are configured statically on each server via autoinstall `user-data` 
 | `192.168.1.1` | Router gateway |
 | `192.168.1.2 – .149` | Dynamic DHCP pool |
 | `192.168.1.150 - .169` | Static - homelab nodes |
+| `192.168.1.160` | Proxmox hypervisor (`pve-01`) |
+| `192.168.1.161` | Pi-hole DNS LXC (`pihole`) |
 | `192.168.1.170` | HP 1820 managed switch (management IP) |
 | `192.168.1.171 – .199` | Reserved — future static devices |
 | `192.168.1.200 – .254` | MetalLB load balancer pool (not in router DHCP) |
