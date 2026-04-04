@@ -383,8 +383,6 @@ homelab/
 │   ├── argocd-config.yaml       # ArgoCD ingress + insecure mode (wave 6)
 │   ├── nfs-csi.yaml             # NFS CSI driver (wave 1)
 │   ├── nfs-csi-config.yaml      # NFS StorageClass (wave 2)
-│   ├── tailscale-operator.yaml  # Tailscale operator (wave 1)
-│   └── tailscale-config.yaml    # auth secret + exposed services (wave 2)
 ├── infrastructure/
 │   ├── metallb/
 │   │   ├── ipaddresspool.yaml       # assigns 192.168.1.200-254 to MetalLB
@@ -397,8 +395,6 @@ homelab/
 │   │   └── ingress.yaml             # routes argocd.fiddlestick.org via ingress-nginx
 │   ├── nfs/
 │   │   └── storageclass.yaml        # default StorageClass backed by Synology NFS
-│   └── tailscale/
-│       └── operator-oauth-sealed.yaml  # sealed Tailscale OAuth credentials
 ├── docs/
 │   ├── homelab-runbook.md
 │   ├── cloudflare-dns-runbook.md    # Cloudflare setup, API token, DNS records

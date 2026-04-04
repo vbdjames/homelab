@@ -1,113 +1,100 @@
 # Tailscale Runbook
 
-> **Status:** Active — operator running, Grafana exposed at grafana.taila8768.ts.net
-> **Last updated:** 2026-04-02
-> **Dependencies:** Sealed Secrets controller running
+> **Status:** Active — subnet router running on pve-01, full LAN accessible via tailnet
+> **Last updated:** 2026-04-04
 
 ---
 
 ## Overview
 
-The Tailscale Kubernetes operator exposes cluster services directly on the tailnet.
-Each exposed service gets a Tailscale IP and a MagicDNS hostname, accessible from
-any device on the tailnet with valid HTTPS certs issued by Tailscale.
+Tailscale provides remote access to all homelab services via a subnet router running on
+`pve-01`. The subnet router advertises `192.168.1.0/24` to the tailnet — any device on
+the tailnet can reach any LAN IP as if they were home.
 
-This provides remote access to all homelab services without opening ports on the
-Verizon router or relying on the `*.fiddlestick.org` ingress path.
+Services are accessed via their `*.fiddlestick.org` names, which resolve to
+`192.168.1.201` (ingress-nginx) via Pi-hole on LAN and via public Cloudflare DNS on
+the tailnet. The same URL works everywhere.
 
-The operator authenticates via an OAuth client (Trust Credentials) created at
-`login.tailscale.com/admin` — no expiry, no rotation needed.
+**Why not the Tailscale Kubernetes operator:**
+The operator was evaluated but removed in favour of the subnet router approach.
+The operator requires per-service configuration and OAuth credentials; the subnet
+router gives access to all services automatically with ACL-based access control.
 
 ---
 
-## Initial Setup
+## Subnet Router Setup (pve-01)
 
-### Create OAuth credentials
+Tailscale is installed directly on the Proxmox host (`pve-01`), not in the cluster.
+This keeps it independent of the cluster — if the cluster is down, Tailscale still works.
 
-1. Go to `login.tailscale.com/admin` → **Settings → Trust Credentials**
-2. Create a new OAuth client named `homelab-k8s-operator`
-3. Scopes required: **Devices — write**, **Auth keys — write**
-4. Copy the **Client ID** and **Client Secret**
-
-### Seal the credentials
+### Install
 
 ```bash
-kubectl create secret generic operator-oauth \
-  --namespace tailscale \
-  --from-literal=client_id=<CLIENT_ID> \
-  --from-literal=client_secret=<CLIENT_SECRET> \
-  --dry-run=client -o yaml | \
-kubeseal \
-  --controller-name sealed-secrets-controller \
-  --controller-namespace sealed-secrets \
-  --format yaml \
-  > infrastructure/tailscale/operator-oauth-sealed.yaml
+curl -fsSL https://tailscale.com/install.sh | sh
 ```
 
-Commit `infrastructure/tailscale/operator-oauth-sealed.yaml` — safe to commit.
+### Start with subnet routing
+
+```bash
+tailscale up --advertise-routes=192.168.1.0/24 --accept-dns=false
+```
+
+> `--accept-dns=false` — prevents Tailscale from overriding Pi-hole DNS on the host.
+
+### Approve the subnet route
+
+In the Tailscale admin console → **Machines** → click `pve-01` → **Edit route settings**
+→ enable `192.168.1.0/24`.
 
 ---
 
-## Exposing a Service on Tailscale
+## Access Control (ACLs)
 
-Use a Kubernetes `Ingress` resource with `ingressClassName: tailscale` — **not** service
-annotations. Service annotations only support HTTP; the Ingress approach gets a valid
-Tailscale TLS cert automatically.
+> ⚠️ ACLs not yet configured. Until they are, all tailnet devices have full LAN access.
+> Configure ACLs before inviting family members or other users to the tailnet.
 
-```yaml
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: grafana
-  namespace: monitoring  # must be in the same namespace as the target service
-spec:
-  ingressClassName: tailscale
-  tls:
-    - hosts:
-        - grafana  # becomes grafana.taila8768.ts.net
-  defaultBackend:
-    service:
-      name: kube-prometheus-stack-grafana
-      port:
-        number: 80
+ACLs are configured in the Tailscale admin console → **Access Controls**.
+
+Example to restrict a `tag:family` group to ingress only:
+
+```json
+{
+  "tagOwners": {
+    "tag:admin":  ["autogroup:owner"],
+    "tag:family": ["autogroup:owner"]
+  },
+  "acls": [
+    {"action": "accept", "src": ["tag:admin"],  "dst": ["*:*"]},
+    {"action": "accept", "src": ["tag:family"], "dst": ["192.168.1.201:443"]}
+  ]
+}
 ```
-
-Place the manifest in `infrastructure/<namespace>/` so the relevant ArgoCD app picks it up.
-
-> ⚠️ If a proxy pod gets into a CrashLoopBackOff after manual intervention, do a full
-> clean slate: delete the StatefulSet, both secrets, and the Ingress, then reapply the
-> Ingress. The operator will recreate everything cleanly.
 
 ---
 
-## Services Exposed on Tailscale
+## Adding a Tailnet User
 
-| Service | MagicDNS hostname | Namespace |
-|---|---|---|
-| Grafana | `grafana.taila8768.ts.net` | monitoring |
-| ArgoCD | `argocd.taila8768.ts.net` | argocd |
+1. Invite them from the Tailscale admin console → **Users → Invite**
+2. Once they join, tag their device appropriately (`tag:family` etc.)
+3. ACLs apply automatically based on tag
 
 ---
 
 ## Verify
 
 ```bash
-# Operator pod running
-kubectl get pods -n tailscale
+# Confirm subnet router is active on pve-01
+tailscale status
 
-# Proxy pods for exposed services
-kubectl get pods -n tailscale
-
-# Devices registered on tailnet
-# Check login.tailscale.com/admin → Machines — should see entries tagged k8s
+# From any tailnet device, confirm LAN access
+ping 192.168.1.201
 ```
 
 ---
 
 ## Checklist
 
-- [x] OAuth credentials created (Trust Credentials) ✅
-- [x] OAuth credentials sealed and committed ✅
-- [x] Tailscale operator deployed ✅
-- [x] Devices visible in Tailscale admin console ✅
-- [x] First service exposed — Grafana at grafana.taila8768.ts.net ✅
+- [x] Tailscale installed on `pve-01` ✅
+- [x] Subnet route `192.168.1.0/24` advertised and approved ✅
+- [x] LAN accessible from tailnet ✅
+- [ ] ACLs configured before inviting other users
