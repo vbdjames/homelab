@@ -68,19 +68,6 @@ spec:
       labels:
         app: paperless
     spec:
-      initContainers:
-        - name: fix-permissions
-          image: busybox
-          command: ['sh', '-c', 'chown -R 1000:1000 /usr/src/paperless/data /usr/src/paperless/media /usr/src/paperless/consume /usr/src/paperless/export']
-          volumeMounts:
-            - name: data
-              mountPath: /usr/src/paperless/data
-            - name: media
-              mountPath: /usr/src/paperless/media
-            - name: consume
-              mountPath: /usr/src/paperless/consume
-            - name: export
-              mountPath: /usr/src/paperless/export
       containers:
         - name: paperless
           image: ghcr.io/paperless-ngx/paperless-ngx:2.13
@@ -123,6 +110,13 @@ spec:
               value: https://paperless.fiddlestick.org
             - name: PAPERLESS_TIME_ZONE
               value: America/New_York  # Update if needed
+            # Run as root (uid 0) so NFS writes succeed. Synology's NFS server does not
+            # recognise uid 1000 from k8s clients, causing EACCES for non-root users.
+            # no_root_squash on the export allows root to write freely.
+            - name: USERMAP_UID
+              value: "0"
+            - name: USERMAP_GID
+              value: "0"
           ports:
             - containerPort: 8000
           volumeMounts:
