@@ -433,6 +433,16 @@ ArgoCD will sync the new secret, but pods only pick up secret changes on restart
 
 ---
 
+### Update Homepage Configuration
+
+Homepage's config lives in a `ConfigMap`. ArgoCD will sync changes to the ConfigMap automatically, but Kubernetes does **not** restart the pod when a ConfigMap changes. After pushing a config change, manually trigger a rollout:
+
+```bash
+kubectl rollout restart deployment/homepage -n homepage
+```
+
+---
+
 ### Deploy a New Application (GitOps workflow)
 
 **Checklist for every new service:**
