@@ -441,6 +441,19 @@ Homepage's config lives in a `ConfigMap`. ArgoCD will sync changes to the Config
 kubectl rollout restart deployment/homepage -n homepage
 ```
 
+**When iterating or troubleshooting**, avoid spamming the git history with fix commits. Instead, test changes directly in the cluster first:
+
+```bash
+kubectl edit configmap homepage-config -n homepage
+kubectl rollout restart deployment/homepage -n homepage
+```
+
+Iterate until the config is correct, then update the file in the repo and make a single clean commit. If you've already made multiple local fix commits, squash them before pushing:
+
+```bash
+git rebase -i origin/main
+```
+
 ---
 
 ### Deploy a New Application (GitOps workflow)
