@@ -68,6 +68,34 @@ spec:
                   resources:
                     requests:
                       storage: 2Gi
+            secrets:
+              - alertmanager-smtp
+          config:
+            global:
+              smtp_smarthost: smtp.fastmail.com:465
+              smtp_from: doug@dwjames.org
+              smtp_auth_username: doug@dwjames.org
+              smtp_auth_password_file: /etc/alertmanager/secrets/alertmanager-smtp/password
+              smtp_require_tls: false
+            route:
+              group_by: ['alertname', 'namespace']
+              group_wait: 30s
+              group_interval: 5m
+              repeat_interval: 12h
+              receiver: email-critical
+              routes:
+                - matchers:
+                    - severity =~ "warning|info"
+                  receiver: email-warning
+            receivers:
+              - name: email-critical
+                email_configs:
+                  - to: vbdjames@gmail.com
+                    send_resolved: true
+              - name: email-warning
+                email_configs:
+                  - to: vbdjames@gmail.com
+                    send_resolved: false
 
   destination:
     server: https://kubernetes.default.svc
