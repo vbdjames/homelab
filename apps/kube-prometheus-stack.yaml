@@ -67,7 +67,19 @@ spec:
                       storage: 20Gi
 
         alertmanager:
+          ingress:
+            enabled: true
+            ingressClassName: nginx
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+            hosts:
+              - alertmanager.fiddlestick.org
+            tls:
+              - secretName: alertmanager-tls
+                hosts:
+                  - alertmanager.fiddlestick.org
           alertmanagerSpec:
+            externalUrl: https://alertmanager.fiddlestick.org
             storage:
               volumeClaimTemplate:
                 spec:
