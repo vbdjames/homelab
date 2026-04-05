@@ -107,12 +107,12 @@ spec:
               routes:
                 - matchers:
                     - alertname = "Watchdog"
-                  receiver: null
+                  receiver: "blackhole"
                 - matchers:
                     - severity =~ "warning|info"
                   receiver: email-warning
             receivers:
-              - name: null
+              - name: "blackhole"
               - name: email-critical
                 email_configs:
                   - to: vbdjames@gmail.com
