@@ -82,6 +82,16 @@ data:
             icon: calibre-web.png
 
     - Infrastructure:
+        - Proxmox:
+            href: https://pve-01.fiddlestick.org:8006
+            description: Hypervisor
+            icon: proxmox.png
+            widget:
+              type: proxmox
+              url: https://192.168.1.160:8006
+              username: "{{HOMEPAGE_VAR_PROXMOX_TOKEN}}"
+              password: "{{HOMEPAGE_VAR_PROXMOX_SECRET}}"
+              node: pve-01
         - Synology NAS:
             href: http://192.168.1.3:5000
             description: Network attached storage
@@ -160,6 +170,16 @@ spec:
                 secretKeyRef:
                   name: homepage-nas
                   key: password
+            - name: HOMEPAGE_VAR_PROXMOX_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-proxmox
+                  key: token
+            - name: HOMEPAGE_VAR_PROXMOX_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-proxmox
+                  key: secret
           volumeMounts:
             - name: config
               mountPath: /app/config
