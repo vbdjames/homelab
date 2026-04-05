@@ -232,6 +232,69 @@ Verizon router's local DNS settings.
 
 ---
 
+## Phase 6 — Pi-hole HTTPS with Let's Encrypt
+
+Pi-hole v6 supports HTTPS natively via a combined PEM file (key + fullchain). Certificates
+are issued using `acme.sh` with Cloudflare DNS-01 challenge — no ports need to be opened.
+
+### Prerequisites
+
+- A Cloudflare API token with Zone → DNS → Edit permission scoped to `fiddlestick.org`
+- `pihole.fiddlestick.org` DNS A record pointing to `192.168.1.161`
+
+### Install acme.sh
+
+Run from the Pi-hole LXC console (Proxmox UI → pihole → Console):
+
+```bash
+curl https://get.acme.sh | sh -s email=doug@dwjames.org
+source ~/.bashrc
+```
+
+### Issue the certificate
+
+```bash
+export CF_Token="<cloudflare-api-token>"
+~/.acme.sh/acme.sh --issue --dns dns_cf -d pihole.fiddlestick.org
+```
+
+### Install the certificate
+
+Pi-hole requires a single combined PEM file containing both the private key and the full
+certificate chain. The `--reloadcmd` rebuilds this file and restarts Pi-hole on each renewal.
+
+```bash
+mkdir -p /etc/pihole/tls
+~/.acme.sh/acme.sh --install-cert -d pihole.fiddlestick.org \
+  --cert-file /etc/pihole/tls/cert.pem \
+  --key-file /etc/pihole/tls/key.pem \
+  --fullchain-file /etc/pihole/tls/fullchain.pem \
+  --reloadcmd "cat /etc/pihole/tls/key.pem /etc/pihole/tls/fullchain.pem > /etc/pihole/tls/combined.pem && systemctl restart pihole-FTL"
+```
+
+### Configure Pi-hole to use the certificate
+
+```bash
+pihole-FTL --config webserver.tls.cert /etc/pihole/tls/combined.pem
+systemctl restart pihole-FTL
+```
+
+Verify HTTPS is listening:
+
+```bash
+ss -tlnp | grep 443
+```
+
+Pi-hole should now be accessible at `https://pihole.fiddlestick.org`.
+
+### Certificate renewal
+
+acme.sh installs a cron job automatically and renews ~60 days before expiry. The
+`--reloadcmd` above ensures the combined file is rebuilt and Pi-hole restarted on renewal.
+No manual intervention required.
+
+---
+
 ## Checklist
 
 ### Proxmox
@@ -246,10 +309,10 @@ Verizon router's local DNS settings.
 - [x] Proxmox UI reachable via Tailscale ✅ (self-signed cert warning expected — see future work below)
 
 ### Pi-hole LXC
-- [ ] Debian 12 template downloaded
-- [ ] LXC created at `192.168.1.161`
-- [ ] Pi-hole installed
-- [ ] Admin UI accessible at `http://192.168.1.161/admin`
+- [x] Debian 12 template downloaded ✅
+- [x] LXC created at `192.168.1.161` ✅
+- [x] Pi-hole installed ✅
+- [x] Admin UI accessible at `https://pihole.fiddlestick.org` ✅ (HTTPS via Let's Encrypt)
 
 ### DNS cutover
 - [x] Wildcard DNS record added in Pi-hole (`fiddlestick.org` → `192.168.1.201`) ✅
@@ -261,4 +324,5 @@ Verizon router's local DNS settings.
 - [x] Proxmox host DNS updated to `192.168.1.161`, search domain `fiddlestick.org` ✅
 
 ### Future work
+- [x] Pi-hole HTTPS via Let's Encrypt ✅
 - [ ] Put Proxmox UI behind a proper TLS cert to eliminate browser warnings (`pve-01.fiddlestick.org`)
