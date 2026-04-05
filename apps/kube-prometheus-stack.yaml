@@ -44,6 +44,15 @@ spec:
             storageClassName: nfs
             size: 5Gi
 
+        kubeEtcd:
+          enabled: false
+        kubeControllerManager:
+          enabled: false
+        kubeScheduler:
+          enabled: false
+        kubeProxy:
+          enabled: false
+
         prometheus:
           prometheusSpec:
             retention: 30d
@@ -85,9 +94,13 @@ spec:
               receiver: email-critical
               routes:
                 - matchers:
+                    - alertname = "Watchdog"
+                  receiver: null
+                - matchers:
                     - severity =~ "warning|info"
                   receiver: email-warning
             receivers:
+              - name: null
               - name: email-critical
                 email_configs:
                   - to: vbdjames@gmail.com
