@@ -76,6 +76,10 @@ data:
             href: https://paperless.fiddlestick.org
             description: Document management
             icon: paperless-ngx.png
+        - Calibre-Web:
+            href: https://books.fiddlestick.org
+            description: Ebook library
+            icon: calibre-web.png
 
     - Infrastructure:
         - Grafana:
