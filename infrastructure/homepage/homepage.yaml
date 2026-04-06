@@ -92,6 +92,10 @@ data:
               username: "{{HOMEPAGE_VAR_PROXMOX_TOKEN}}"
               password: "{{HOMEPAGE_VAR_PROXMOX_SECRET}}"
               node: pve-01
+        - Pi-hole:
+            href: https://pihole.fiddlestick.org/admin
+            description: DNS and DHCP
+            icon: pi-hole.png
         - Synology NAS:
             href: http://192.168.1.3:5000
             description: Network attached storage
