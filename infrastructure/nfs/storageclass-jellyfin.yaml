@@ -1,0 +1,12 @@
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-jellyfin
+provisioner: nfs.csi.k8s.io
+parameters:
+  server: 192.168.1.3
+  share: /volume1/jellyfin
+reclaimPolicy: Retain
+volumeBindingMode: Immediate
+mountOptions:
+  - nfsvers=4.1
