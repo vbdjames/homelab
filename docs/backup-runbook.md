@@ -128,4 +128,4 @@ compromised, it must be explicitly deleted after all secrets are re-sealed with 
 - [x] Sealed Secrets key exported and stored securely
 - [x] Pi-hole Teleporter export completed and stored
 - [x] Backup locations documented above
-- [ ] Calendar reminder set to re-export Sealed Secrets key after each auto-rotation (~30 days)
+- [x] Calendar reminder set to re-export Sealed Secrets key after each auto-rotation (1st of each month) ✅

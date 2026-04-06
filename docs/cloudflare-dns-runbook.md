@@ -63,26 +63,27 @@ All homelab services share a single ingress-nginx IP (assigned by MetalLB). Add 
 | Hostname | Type | Value | Notes |
 |---|---|---|---|
 | `argocd.fiddlestick.org` | A | `192.168.1.201` | ArgoCD UI |
-| `podinfo.fiddlestick.org` | A | `192.168.1.201` | Smoke-test workload |
 | `grafana.fiddlestick.org` | A | `192.168.1.201` | Grafana dashboards |
+| `alertmanager.fiddlestick.org` | A | `192.168.1.201` | Alertmanager UI |
+| `home.fiddlestick.org` | A | `192.168.1.201` | Homepage dashboard |
+| `paperless.fiddlestick.org` | A | `192.168.1.201` | Paperless-ngx |
+| `books.fiddlestick.org` | A | `192.168.1.201` | Calibre-Web |
+| `pihole.fiddlestick.org` | A | `192.168.1.161` | Pi-hole admin UI (direct, not via ingress) |
+| `podinfo.fiddlestick.org` | A | `192.168.1.201` | Smoke-test workload |
 
-Add entries to this table as new services are deployed. All records point at the same ingress IP.
+Add entries to this table as new services are deployed.
 
-> ⚠️ These are real public DNS records resolving to a private LAN IP (`192.168.1.201`). They will only work on your LAN (or via Tailscale). That is intentional — the domain is used for cert issuance only, not for public exposure.
+> ⚠️ These are real public DNS records resolving to private LAN IPs. They will only work on your LAN (or via Tailscale). That is intentional — the domain is used for cert issuance only, not for public exposure.
 
-### Local DNS records (Verizon G1100 router)
+### Local DNS records (Pi-hole)
 
-Until Pi-hole or pfSense is in place, each service also needs a matching entry in the Verizon router's local DNS so LAN devices can resolve it. The router does not use Cloudflare for local lookups.
+Pi-hole handles local DNS via a wildcard record — no per-service entries needed:
 
-Go to the router's DNS settings and add one entry per service:
-
-| Hostname | IP |
-|---|---|
-| `argocd.fiddlestick.org` | `192.168.1.201` |
-| `podinfo.fiddlestick.org` | `192.168.1.201` |
-| `grafana.fiddlestick.org` | `192.168.1.201` |
-
-> ℹ️ When Pi-hole or pfSense takes over DNS, these router entries can be removed and replaced with a single wildcard record (`*.fiddlestick.org` → `192.168.1.201`) in Pi-hole.
+| Hostname | IP | Notes |
+|---|---|---|
+| `*.fiddlestick.org` | `192.168.1.201` | Wildcard — covers all ingress services |
+| `pihole.fiddlestick.org` | `192.168.1.161` | Direct to Pi-hole LXC |
+| `pve-01.fiddlestick.org` | `192.168.1.160` | Direct to Proxmox host |
 
 ---
 
@@ -94,4 +95,4 @@ Go to the router's DNS settings and add one entry per service:
 - [x] Propagation verified (`dig NS fiddlestick.org`) ✅
 - [x] API token created and stored in password manager ✅
 - [x] API token stored as Sealed Secret in cluster ✅
-- [x] Ingress IP determined (`192.168.1.201`) and DNS records added ✅t push
+- [x] Ingress IP determined (`192.168.1.201`) and DNS records added ✅

@@ -270,6 +270,43 @@ systemctl restart pihole-FTL
 
 ---
 
+## Phase 7 — Proxmox UI HTTPS with Let's Encrypt
+
+Proxmox uses `pveproxy` to serve its web UI. It stores its certificate at
+`/etc/pve/local/pveproxy-ssl.pem` and key at `/etc/pve/local/pveproxy-ssl.key`.
+
+### Install acme.sh on Proxmox host
+
+Run from the Proxmox shell (web UI → pve-01 → Shell):
+
+```bash
+curl https://get.acme.sh | sh -s email=doug@dwjames.org
+source ~/.bashrc
+```
+
+### Issue the certificate
+
+```bash
+export CF_Token="<cloudflare-api-token>"
+~/.acme.sh/acme.sh --issue --dns dns_cf -d pve-01.fiddlestick.org
+```
+
+### Install the certificate
+
+```bash
+~/.acme.sh/acme.sh --install-cert -d pve-01.fiddlestick.org \
+  --cert-file /etc/pve/local/pveproxy-ssl.pem \
+  --key-file /etc/pve/local/pveproxy-ssl.key \
+  --reloadcmd "systemctl reload pveproxy"
+```
+
+acme.sh installs a cron job and renews automatically. The `--reloadcmd` reloads pveproxy
+on each renewal — no manual intervention required.
+
+Proxmox UI is now accessible at `https://pve-01.fiddlestick.org:8006` with a valid cert.
+
+---
+
 ## Checklist
 
 ### Proxmox
@@ -281,7 +318,7 @@ systemctl restart pihole-FTL
 ### Tailscale subnet router
 - [x] Tailscale installed on `pve-01` ✅
 - [x] Subnet route `192.168.1.0/24` advertised and approved in Tailscale admin ✅
-- [x] Proxmox UI reachable via Tailscale ✅ (self-signed cert warning expected — see future work below)
+- [x] Proxmox UI reachable via Tailscale ✅
 
 ### Pi-hole LXC
 - [x] Debian 12 template downloaded ✅
@@ -300,4 +337,4 @@ systemctl restart pihole-FTL
 
 ### Future work
 - [x] Pi-hole HTTPS via Let's Encrypt ✅
-- [ ] Put Proxmox UI behind a proper TLS cert to eliminate browser warnings (`pve-01.fiddlestick.org`)
+- [x] Proxmox UI TLS cert via Let's Encrypt (`pve-01.fiddlestick.org`) ✅
