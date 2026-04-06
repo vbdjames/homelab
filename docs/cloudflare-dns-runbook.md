@@ -70,6 +70,9 @@ All homelab services share a single ingress-nginx IP (assigned by MetalLB). Add 
 | `books.fiddlestick.org` | A | `192.168.1.201` | Calibre-Web |
 | `pihole.fiddlestick.org` | A | `192.168.1.161` | Pi-hole admin UI (direct, not via ingress) |
 | `jellyfin.fiddlestick.org` | A | `192.168.1.201` | Jellyfin media server |
+| `sonarr.fiddlestick.org` | A | `192.168.1.201` | Sonarr TV show manager |
+| `radarr.fiddlestick.org` | A | `192.168.1.201` | Radarr movie manager |
+| `bazarr.fiddlestick.org` | A | `192.168.1.201` | Bazarr subtitle manager |
 | `podinfo.fiddlestick.org` | A | `192.168.1.201` | Smoke-test workload |
 
 Add entries to this table as new services are deployed.
