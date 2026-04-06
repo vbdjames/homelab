@@ -215,15 +215,7 @@ upstream DNS (Cloudflare) — so external `fiddlestick.org` subdomains resolve n
 > ⚠️ Do NOT use the dnsmasq wildcard approach (`address=/fiddlestick.org/192.168.1.201`)
 > — this intercepts ALL fiddlestick.org queries including any externally hosted services.
 
-| Domain | IP |
-|---|---|
-| `grafana.fiddlestick.org` | `192.168.1.201` |
-| `argocd.fiddlestick.org` | `192.168.1.201` |
-| `podinfo.fiddlestick.org` | `192.168.1.201` |
-| `pve-01.fiddlestick.org` | `192.168.1.160` |
-| `pihole.fiddlestick.org` | `192.168.1.161` |
-
-Add entries to this table as new services are deployed.
+For the current list of DNS records, see [cloudflare-dns-runbook.md](cloudflare-dns-runbook.md) — the local Pi-hole records mirror the Cloudflare records table.
 
 ### Remove router local DNS entries
 

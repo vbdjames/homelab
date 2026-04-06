@@ -1,7 +1,7 @@
 # Homelab Kubernetes Cluster — Build Runbook
 
 > **Status:** Active — cluster running, GitOps active, observability and Tailscale deployed
-> **Last updated:** 2026-04-03
+> **Last updated:** 2026-04-06
 > **Stack:** Ubuntu 24.04 · kubeadm · Cilium · MetalLB · ArgoCD · Synology NAS (NFS)
 
 ---
@@ -349,64 +349,16 @@ Access the UI at `https://192.168.1.150:<nodeport>` — username `admin`, passwo
 
 ## 7. Repo Structure
 
-```
-homelab/
-├── ansible.cfg
-├── ansible/
-│   ├── inventory/
-│   │   ├── hosts.yml
-│   │   └── group_vars/
-│   │       └── all.yml
-│   ├── requirements.yml
-│   ├── roles/
-│   │   ├── k8s_node/
-│   │   ├── k8s_kubeadm/
-│   │   ├── k8s_control_plane/
-│   │   ├── k8s_workers/
-│   │   └── k8s_argocd/
-│   ├── README.md
-│   ├── base.yml
-│   ├── k8s-provision.yml
-│   ├── k8s-init.yml
-│   ├── k8s-bootstrap.yml
-│   └── k8s-add-node.yml
-├── bootstrap/
-│   └── apps.yaml              # root App-of-Apps — apply once to activate GitOps
-├── apps/
-│   ├── podinfo.yaml             # smoke-test workload
-│   ├── metallb.yaml             # MetalLB controller (Helm, wave 1)
-│   ├── metallb-config.yaml      # IP pool + L2 config (wave 2)
-│   ├── sealed-secrets.yaml      # Sealed Secrets controller (wave 0)
-│   ├── cert-manager.yaml        # cert-manager controller (wave 3)
-│   ├── cert-manager-config.yaml # ClusterIssuer + Cloudflare token (wave 4)
-│   ├── ingress-nginx.yaml       # ingress controller (wave 5)
-│   ├── argocd-config.yaml       # ArgoCD ingress + insecure mode (wave 6)
-│   ├── nfs-csi.yaml             # NFS CSI driver (wave 1)
-│   ├── nfs-csi-config.yaml      # NFS StorageClass (wave 2)
-├── infrastructure/
-│   ├── metallb/
-│   │   ├── ipaddresspool.yaml       # assigns 192.168.1.200-254 to MetalLB
-│   │   └── l2advertisement.yaml     # enables L2/ARP mode for that pool
-│   ├── cert-manager/
-│   │   ├── clusterissuer.yaml       # Let's Encrypt + Cloudflare DNS-01 solver
-│   │   └── cloudflare-api-token-sealed.yaml
-│   ├── argocd/
-│   │   ├── params.yaml              # sets argocd-server to insecure mode
-│   │   └── ingress.yaml             # routes argocd.fiddlestick.org via ingress-nginx
-│   ├── nfs/
-│   │   └── storageclass.yaml        # default StorageClass backed by Synology NFS
-├── docs/
-│   ├── homelab-runbook.md
-│   ├── cloudflare-dns-runbook.md    # Cloudflare setup, API token, DNS records
-│   ├── cert-manager-runbook.md      # Sealed secret workflow, cert-manager, ingress-nginx
-│   ├── nas-runbook.md               # NFS setup on Synology
-│   ├── observability-runbook.md     # kube-prometheus-stack, Loki, Grafana
-│   ├── tailscale-runbook.md         # Tailscale operator, subnet router, ACLs
-│   ├── proxmox-runbook.md           # Proxmox install, Pi-hole LXC, DNS cutover
-│   ├── router-setup-runbook.md
-│   └── usb-prep-install-runbook.md
-└── user-data/
-    └── user-data-hl-{01-06}.yml
+The repo is the authoritative source for structure — refer to it directly rather than a static snapshot here.
+
+Key directories:
+
+- **`ansible/`** — Ansible playbooks and inventory. See `ansible/README.md` for playbook reference.
+- **`bootstrap/`** — Root ArgoCD App-of-Apps manifest. Apply once to activate GitOps.
+- **`apps/`** — One ArgoCD `Application` manifest per deployed service, wave-ordered.
+- **`infrastructure/`** — Raw Kubernetes manifests (deployments, PVCs, ingress, sealed secrets) organised by app.
+- **`docs/`** — Runbooks for each major component.
+- **`notes/`** — Future work backlog and legacy planning notes.
 ```
 
 ---
