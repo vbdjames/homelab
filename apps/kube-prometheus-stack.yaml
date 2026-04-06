@@ -107,12 +107,16 @@ spec:
               routes:
                 - matchers:
                     - alertname = "Watchdog"
-                  receiver: "blackhole"
+                  receiver: "healthchecks"
+                  repeat_interval: 5m
                 - matchers:
                     - severity =~ "warning|info"
                   receiver: email-warning
             receivers:
-              - name: "blackhole"
+              - name: "healthchecks"
+                webhook_configs:
+                  - url: "https://hc-ping.com/2269d9ca-223f-460f-aee3-a0e097a21806"
+                    send_resolved: false
               - name: email-critical
                 email_configs:
                   - to: vbdjames@gmail.com
