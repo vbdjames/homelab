@@ -41,6 +41,24 @@
     # -------------------------------------------------------------------------
     # Admin user
     # -------------------------------------------------------------------------
+    - name: Create ansible user
+      ansible.builtin.user:
+        name: ansible
+        shell: /bin/bash
+        create_home: true
+
+    - name: Add ansible SSH public key
+      ansible.posix.authorized_key:
+        user: ansible
+        key: "{{ lookup('file', 'files/ansible_homelab.pub') }}"
+        state: present
+
+    - name: Allow ansible passwordless sudo
+      ansible.builtin.copy:
+        content: "ansible ALL=(ALL) NOPASSWD:ALL\n"
+        dest: /etc/sudoers.d/ansible
+        mode: "0440"
+
     - name: Create djames user
       ansible.builtin.user:
         name: djames

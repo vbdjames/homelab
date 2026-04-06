@@ -1,0 +1,16 @@
+---
+# Proxmox API connection
+proxmox_host: 192.168.1.160
+proxmox_api_user: root@pam
+proxmox_api_token_id: ansible
+proxmox_api_token_secret: "{{ vault_proxmox_api_token_secret }}"
+
+# Pi-hole LXC configuration
+pihole_lxc_id: 100
+pihole_hostname: pihole
+pihole_ip: 192.168.1.161
+pihole_gateway: 192.168.1.1
+pihole_disk: 8
+pihole_memory: 512
+pihole_cores: 1
+

@@ -237,61 +237,36 @@ Verizon router's local DNS settings.
 Pi-hole v6 supports HTTPS natively via a combined PEM file (key + fullchain). Certificates
 are issued using `acme.sh` with Cloudflare DNS-01 challenge — no ports need to be opened.
 
-### Prerequisites
+This is now automated via the Ansible playbook `ansible/proxmox-pihole.yml`. See
+[ansible/README.md](../ansible/README.md) for usage.
 
-- A Cloudflare API token with Zone → DNS → Edit permission scoped to `fiddlestick.org`
-- `pihole.fiddlestick.org` DNS A record pointing to `192.168.1.161`
+### How it works
 
-### Install acme.sh
+- `acme.sh` is installed as root on the Pi-hole LXC
+- Certificate is issued via Cloudflare DNS-01 (no port 80/443 required)
+- A combined PEM file (key + fullchain) is written to `/etc/pihole/tls/combined.pem`
+- Pi-hole FTL is configured to use the combined PEM for HTTPS on port 443
+- acme.sh installs a cron job that renews ~60 days before expiry and rebuilds the combined
+  file automatically on renewal
 
-Run from the Pi-hole LXC console (Proxmox UI → pihole → Console):
+### Manual steps (reference only)
+
+If you ever need to re-run this manually outside of Ansible:
 
 ```bash
-curl https://get.acme.sh | sh -s email=doug@dwjames.org
-source ~/.bashrc
-```
-
-### Issue the certificate
-
-```bash
+# On the Pi-hole LXC as root
 export CF_Token="<cloudflare-api-token>"
 ~/.acme.sh/acme.sh --issue --dns dns_cf -d pihole.fiddlestick.org
-```
-
-### Install the certificate
-
-Pi-hole requires a single combined PEM file containing both the private key and the full
-certificate chain. The `--reloadcmd` rebuilds this file and restarts Pi-hole on each renewal.
-
-```bash
 mkdir -p /etc/pihole/tls
 ~/.acme.sh/acme.sh --install-cert -d pihole.fiddlestick.org \
   --cert-file /etc/pihole/tls/cert.pem \
   --key-file /etc/pihole/tls/key.pem \
   --fullchain-file /etc/pihole/tls/fullchain.pem \
   --reloadcmd "cat /etc/pihole/tls/key.pem /etc/pihole/tls/fullchain.pem > /etc/pihole/tls/combined.pem && systemctl restart pihole-FTL"
-```
-
-### Configure Pi-hole to use the certificate
-
-```bash
+cat /etc/pihole/tls/key.pem /etc/pihole/tls/fullchain.pem > /etc/pihole/tls/combined.pem
 pihole-FTL --config webserver.tls.cert /etc/pihole/tls/combined.pem
 systemctl restart pihole-FTL
 ```
-
-Verify HTTPS is listening:
-
-```bash
-ss -tlnp | grep 443
-```
-
-Pi-hole should now be accessible at `https://pihole.fiddlestick.org`.
-
-### Certificate renewal
-
-acme.sh installs a cron job automatically and renews ~60 days before expiry. The
-`--reloadcmd` above ensures the combined file is rebuilt and Pi-hole restarted on renewal.
-No manual intervention required.
 
 ---
 

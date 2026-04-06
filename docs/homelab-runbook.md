@@ -420,6 +420,21 @@ the Sealed Secrets decryption key export procedure, Pi-hole Teleporter export, a
 
 ---
 
+### Run Base Configuration on a New Non-k8s Host
+
+For hosts that aren't bootstrapped via cloud-init (e.g. Proxmox LXC containers), run
+`base.yml` after the host is reachable via SSH to apply standard configuration: packages,
+timezone, `ansible` and `djames` users, SSH hardening, UFW.
+
+```bash
+cd /workspaces/homelab/ansible
+ansible-playbook base.yml --limit <hostname>
+```
+
+Note: the host must already be in the inventory before running this.
+
+---
+
 ### Rotate or Update a Sealed Secret
 
 Updating a `SealedSecret` does **not** automatically restart the pods that use it.

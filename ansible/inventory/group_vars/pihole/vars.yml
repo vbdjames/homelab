@@ -1,0 +1,7 @@
+---
+# Certificate
+acme_email: doug@dwjames.org
+acme_domain: pihole.fiddlestick.org
+
+# Cloudflare (vault reference — defined in proxmox vault)
+cloudflare_api_token: "{{ vault_cloudflare_api_token }}"

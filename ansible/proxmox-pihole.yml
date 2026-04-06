@@ -1,0 +1,171 @@
+---
+# Playbook: proxmox-pihole.yml
+#
+# Creates and configures a Pi-hole LXC container on Proxmox.
+# Play 1 — runs against Proxmox host: creates the LXC
+# Play 2 — runs against Pi-hole LXC: installs Pi-hole, acme.sh, configures HTTPS
+#
+# Usage:
+#   ansible-playbook ansible/proxmox-pihole.yml
+#   ansible-playbook ansible/proxmox-pihole.yml --tags create   # LXC creation only
+#   ansible-playbook ansible/proxmox-pihole.yml --tags configure # Pi-hole config only
+
+- name: Create Pi-hole LXC on Proxmox
+  hosts: proxmox
+  gather_facts: false
+  tags: create
+
+  tasks:
+    - name: Download Debian 12 LXC template
+      community.general.proxmox_template:
+        node: pve-01
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_token_id: "{{ proxmox_api_token_id }}"
+        api_token_secret: "{{ proxmox_api_token_secret }}"
+        storage: local
+        content_type: vztmpl
+        template: debian-12-standard_12.7-1_amd64.tar.zst
+
+    - name: Create Pi-hole LXC container
+      community.general.proxmox:
+        node: pve-01
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_token_id: "{{ proxmox_api_token_id }}"
+        api_token_secret: "{{ proxmox_api_token_secret }}"
+        vmid: "{{ pihole_lxc_id }}"
+        hostname: "{{ pihole_hostname }}"
+        ostemplate: local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst
+        storage: local-lvm
+        disk: "{{ pihole_disk }}"
+        memory: "{{ pihole_memory }}"
+        cores: "{{ pihole_cores }}"
+        netif:
+          net0: "name=eth0,bridge=vmbr0,ip={{ pihole_ip }}/24,gw={{ pihole_gateway }}"
+        nameserver: "{{ pihole_gateway }}"
+        onboot: true
+        unprivileged: true
+        features:
+          - nesting=1
+        pubkey: "{{ lookup('file', 'files/ansible_homelab.pub') }}"
+        state: present
+
+    - name: Start Pi-hole LXC
+      community.general.proxmox:
+        node: pve-01
+        api_host: "{{ proxmox_host }}"
+        api_user: "{{ proxmox_api_user }}"
+        api_token_id: "{{ proxmox_api_token_id }}"
+        api_token_secret: "{{ proxmox_api_token_secret }}"
+        vmid: "{{ pihole_lxc_id }}"
+        state: started
+
+    - name: Wait for Pi-hole LXC to be reachable
+      ansible.builtin.wait_for:
+        host: "{{ pihole_ip }}"
+        port: 22
+        delay: 5
+        timeout: 60
+
+- name: Bootstrap Pi-hole LXC (initial root access)
+  hosts: pihole
+  gather_facts: true
+  become: true
+  tags: configure
+
+  tasks:
+    - name: Install required packages for bootstrap
+      ansible.builtin.apt:
+        name:
+          - curl
+          - ca-certificates
+          - sudo
+          - openssh-server
+        state: present
+        update_cache: true
+
+    - name: Create ansible user
+      ansible.builtin.user:
+        name: ansible
+        shell: /bin/bash
+        create_home: true
+
+    - name: Add ansible SSH public key
+      ansible.posix.authorized_key:
+        user: ansible
+        key: "{{ lookup('file', 'files/ansible_homelab.pub') }}"
+        state: present
+
+    - name: Allow ansible passwordless sudo
+      ansible.builtin.copy:
+        content: "ansible ALL=(ALL) NOPASSWD:ALL\n"
+        dest: /etc/sudoers.d/ansible
+        mode: "0440"
+
+- name: Configure Pi-hole LXC
+  hosts: pihole
+  gather_facts: true
+  become: true
+  tags: configure
+
+  tasks:
+    - name: Install Pi-hole
+      ansible.builtin.shell:
+        cmd: curl -sSL https://install.pi-hole.net | bash /dev/stdin --unattended
+        creates: /usr/local/bin/pihole
+      environment:
+        PIHOLE_SKIP_OS_CHECK: "true"
+
+    - name: Update gravity (blocklist)
+      ansible.builtin.command: pihole -g
+      changed_when: true
+
+    - name: Install acme.sh
+      ansible.builtin.shell:
+        cmd: curl https://get.acme.sh | sh -s email={{ acme_email }}
+        creates: /root/.acme.sh/acme.sh
+
+    - name: Issue certificate via Cloudflare DNS-01
+      ansible.builtin.shell:
+        cmd: /root/.acme.sh/acme.sh --issue --dns dns_cf -d {{ acme_domain }}
+        creates: /root/.acme.sh/{{ acme_domain }}/fullchain.cer
+      environment:
+        CF_Token: "{{ cloudflare_api_token }}"
+      register: acme_issue
+      failed_when: acme_issue.rc != 0 and acme_issue.rc != 2
+
+    - name: Create TLS directory
+      ansible.builtin.file:
+        path: /etc/pihole/tls
+        state: directory
+        mode: '0750'
+        owner: root
+        group: pihole
+
+    - name: Install certificate
+      ansible.builtin.shell:
+        cmd: >
+          /root/.acme.sh/acme.sh --install-cert -d {{ acme_domain }}
+          --cert-file /etc/pihole/tls/cert.pem
+          --key-file /etc/pihole/tls/key.pem
+          --fullchain-file /etc/pihole/tls/fullchain.pem
+          --reloadcmd "cat /etc/pihole/tls/key.pem /etc/pihole/tls/fullchain.pem > /etc/pihole/tls/combined.pem && systemctl restart pihole-FTL"
+      args:
+        creates: /etc/pihole/tls/cert.pem
+
+    - name: Build initial combined PEM
+      ansible.builtin.shell:
+        cmd: cat /etc/pihole/tls/key.pem /etc/pihole/tls/fullchain.pem > /etc/pihole/tls/combined.pem
+        creates: /etc/pihole/tls/combined.pem
+
+    - name: Configure Pi-hole TLS cert path
+      ansible.builtin.command:
+        cmd: pihole-FTL --config webserver.tls.cert /etc/pihole/tls/combined.pem
+      notify: Restart pihole-FTL
+
+  handlers:
+    - name: Restart pihole-FTL
+      ansible.builtin.systemd:
+        name: pihole-FTL
+        state: restarted

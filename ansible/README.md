@@ -1,8 +1,34 @@
 # Playbooks
 
+## Prerequisites
+
+All playbooks must be run from the `ansible/` directory:
+
+```bash
+cd /workspaces/homelab/ansible
+```
+
+An Ansible vault is used for secrets (Proxmox API token, Cloudflare API token). The vault
+password is stored in `ansible/.vault-password` (gitignored). Save the password in 1Password
+in case the devcontainer is rebuilt.
+
 ## Universal 
 
-- **`base.yml`** - Run on every homelab host. Base OS configuration: package updates, timezone, `djames` admin user, SSH hardening, UFW.
+- **`base.yml`** - Run on every homelab host. Base OS configuration: package updates, timezone, `ansible` and `djames` admin users, SSH hardening, UFW.
+
+## Proxmox
+
+- **`proxmox-pihole.yml`** - Creates and configures the Pi-hole LXC on Proxmox. Idempotent — safe to re-run.
+  - `--tags create` — LXC creation only (runs against Proxmox host via API)
+  - `--tags configure` — Pi-hole install, acme.sh, HTTPS configuration (runs against Pi-hole LXC)
+
+```bash
+# Full run (create + configure)
+ansible-playbook proxmox-pihole.yml
+
+# Configure only (LXC already exists)
+ansible-playbook proxmox-pihole.yml --tags configure
+```
 
 ## Kubernetes cluster
 
@@ -14,22 +40,22 @@
 ### Run order (fresh cluster)
 
 ```bash
-# From the repo root
+# From ansible/
 
 # 1. Prepare all nodes
-ansible-playbook ansible/k8s-provision.yml
+ansible-playbook k8s-provision.yml
 
 # 2. Create the cluster
-ansible-playbook ansible/k8s-init.yml
+ansible-playbook k8s-init.yml
 
 # 3. Bootstrap GitOps
-ansible-playbook ansible/k8s-bootstrap.yml
+ansible-playbook k8s-bootstrap.yml
 ```
 
 ### Adding a new worker node
 
 ```bash
 # The new host must already be in inventory before running these
-ansible-playbook ansible/base.yml --limit hl-07
-ansible-playbook ansible/k8s-add-node.yml -e target_host=hl-07
+ansible-playbook base.yml --limit hl-07
+ansible-playbook k8s-add-node.yml -e target_host=hl-07
 ```
