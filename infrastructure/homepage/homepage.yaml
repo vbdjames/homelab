@@ -66,6 +66,15 @@ data:
     - search:
         provider: google
         target: _blank
+    - kubernetes:
+        cluster:
+          show: true
+          cpu: true
+          memory: true
+          showLabel: true
+          label: homelab
+        nodes:
+          show: false
 
   services.yaml: |
     - Home:
@@ -83,19 +92,6 @@ data:
             icon: jellyfin.png
 
     - Infrastructure:
-        - Kubernetes:
-            description: Cluster
-            icon: kubernetes.png
-            widget:
-              type: kubernetes
-              cluster:
-                show: true
-                cpu: true
-                memory: true
-                showLabel: true
-                label: homelab
-              nodes:
-                show: false
         - Proxmox:
             href: https://pve-01.fiddlestick.org:8006
             description: Hypervisor
@@ -138,14 +134,26 @@ data:
             href: https://sonarr.fiddlestick.org
             description: TV show management
             icon: sonarr.png
+            widget:
+              type: sonarr
+              url: http://sonarr.arr.svc.cluster.local:8989
+              key: "{{HOMEPAGE_VAR_SONARR_API_KEY}}"
         - Radarr:
             href: https://radarr.fiddlestick.org
             description: Movie management
             icon: radarr.png
+            widget:
+              type: radarr
+              url: http://radarr.arr.svc.cluster.local:7878
+              key: "{{HOMEPAGE_VAR_RADARR_API_KEY}}"
         - Bazarr:
             href: https://bazarr.fiddlestick.org
             description: Subtitle management
             icon: bazarr.png
+            widget:
+              type: bazarr
+              url: http://bazarr.arr.svc.cluster.local:6767
+              key: "{{HOMEPAGE_VAR_BAZARR_API_KEY}}"
 
   bookmarks.yaml: |
     []
@@ -212,6 +220,21 @@ spec:
                 secretKeyRef:
                   name: homepage-proxmox
                   key: secret
+            - name: HOMEPAGE_VAR_SONARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-arr
+                  key: sonarr
+            - name: HOMEPAGE_VAR_RADARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-arr
+                  key: radarr
+            - name: HOMEPAGE_VAR_BAZARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-arr
+                  key: bazarr
           volumeMounts:
             - name: config
               mountPath: /app/config
