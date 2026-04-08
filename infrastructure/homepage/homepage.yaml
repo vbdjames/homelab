@@ -47,9 +47,15 @@ data:
     headerStyle: clean
     layout:
       Home:
+        tab: Home
         style: row
         columns: 3
       Infrastructure:
+        tab: Admin
+        style: row
+        columns: 3
+      Media Management:
+        tab: Admin
         style: row
         columns: 3
 
@@ -60,15 +66,6 @@ data:
     - search:
         provider: google
         target: _blank
-    - kubernetes:
-        cluster:
-          show: true
-          cpu: true
-          memory: true
-          showLabel: true
-          label: homelab
-        nodes:
-          show: false
 
   services.yaml: |
     - Home:
@@ -80,8 +77,25 @@ data:
             href: https://books.fiddlestick.org
             description: Ebook library
             icon: calibre-web.png
+        - Jellyfin:
+            href: https://jellyfin.fiddlestick.org
+            description: Media server
+            icon: jellyfin.png
 
     - Infrastructure:
+        - Kubernetes:
+            description: Cluster
+            icon: kubernetes.png
+            widget:
+              type: kubernetes
+              cluster:
+                show: true
+                cpu: true
+                memory: true
+                showLabel: true
+                label: homelab
+              nodes:
+                show: false
         - Proxmox:
             href: https://pve-01.fiddlestick.org:8006
             description: Hypervisor
@@ -118,6 +132,20 @@ data:
             href: https://argocd.fiddlestick.org
             description: GitOps deployments
             icon: argo-cd.png
+
+    - Media Management:
+        - Sonarr:
+            href: https://sonarr.fiddlestick.org
+            description: TV show management
+            icon: sonarr.png
+        - Radarr:
+            href: https://radarr.fiddlestick.org
+            description: Movie management
+            icon: radarr.png
+        - Bazarr:
+            href: https://bazarr.fiddlestick.org
+            description: Subtitle management
+            icon: bazarr.png
 
   bookmarks.yaml: |
     []
