@@ -1,0 +1,15 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: homepage-paperless
+  namespace: homepage
+spec:
+  encryptedData:
+    token: AgBc/FEQoMdSAkXQxMX+WgSE7VqSuJh7qoOvbYh1peQG8fEjBdA1XvPtEVH4jgeFlhYNuX2F0pzMlD7+Im4FzkZSkP380O0gjmv1H0qaCof1pSlcq2HR48iOO5acMZbZmItHybEejpYH2jtd0nii+mhQzOgIQQ183JaJ7RPo+0rpIdDuOkhYH8H+0VLzR+7xjoH6aJc2sAm7V+90xPOydcOx7gKDRElYhJjdLRDBJw6Wew1gM5dAW1u2jbqAlLbuvCVnZhJ4EJcz9fZqCFhlvPNj2UWEiqTvGl1j3MN0oL2gyWSsqNhLoh59qfRTYxoMLDAPd87t7SKk+b1vXwNuQenNeU8m9+gbX9u7zm/Xtrs7kzodL7RPsVhT916zMedbKHm8iowt8kOv3F5IuAlifTS2X22ueWdcvnoAt8dMyhdJU1Jc/44qY8XpExiXUjR5HksGfj4mpr9lZ+QBo27vBw/mQQrGXrlRMOsLhWXCDGue6X6CaU2TfMcwZp97BV/QrYdMeYAaIGpDSBaRed01v6Jzhskj97lOuv3ywZBVs8c22zfOePdpFHfZSefT00KocClD+upaxi+bGVe6kqQ0Jk8ZOgOxPLXtcC9ybVBkWa3qnMZkxGta4yRToka3949vPPJPM6akKhk+GraujcgWGx9Z+e4FXoA+UGDb//tcYsl/EXdWKx6vdgNLdw/HnVRs5E6FDgdtIm7yYPG6UJdMX+5OBe3iXy2zwE8UF1I+IYdHPCTdldu/oWMk
+  template:
+    metadata:
+      creationTimestamp: null
+      name: homepage-paperless
+      namespace: homepage

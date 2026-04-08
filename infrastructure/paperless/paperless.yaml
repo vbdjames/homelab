@@ -108,7 +108,7 @@ spec:
             - name: PAPERLESS_URL
               value: https://paperless.fiddlestick.org
             - name: PAPERLESS_ALLOWED_HOSTS
-              value: paperless.fiddlestick.org
+              value: paperless.fiddlestick.org,paperless.paperless.svc.cluster.local
             - name: PAPERLESS_CORS_ALLOWED_HOSTS
               value: https://paperless.fiddlestick.org
             - name: PAPERLESS_TIME_ZONE

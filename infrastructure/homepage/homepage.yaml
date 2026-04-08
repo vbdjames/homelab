@@ -82,10 +82,19 @@ data:
             href: https://paperless.fiddlestick.org
             description: Document management
             icon: paperless-ngx.png
+            widget:
+              type: paperlessngx
+              url: http://paperless.paperless.svc.cluster.local:8000
+              key: "{{HOMEPAGE_VAR_PAPERLESS_TOKEN}}"
         - Calibre-Web:
             href: https://books.fiddlestick.org
             description: Ebook library
             icon: calibre-web.png
+            widget:
+              type: calibreweb
+              url: http://calibre-web.calibre-web.svc.cluster.local:8083
+              username: "{{HOMEPAGE_VAR_CALIBRE_USERNAME}}"
+              password: "{{HOMEPAGE_VAR_CALIBRE_PASSWORD}}"
         - Jellyfin:
             href: https://jellyfin.fiddlestick.org
             description: Media server
@@ -226,6 +235,21 @@ spec:
                 secretKeyRef:
                   name: homepage-proxmox
                   key: secret
+            - name: HOMEPAGE_VAR_PAPERLESS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-paperless
+                  key: token
+            - name: HOMEPAGE_VAR_CALIBRE_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-calibre
+                  key: username
+            - name: HOMEPAGE_VAR_CALIBRE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-calibre
+                  key: password
             - name: HOMEPAGE_VAR_JELLYFIN_API_KEY
               valueFrom:
                 secretKeyRef:
