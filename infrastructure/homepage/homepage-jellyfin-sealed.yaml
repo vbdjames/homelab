@@ -1,0 +1,15 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: homepage-jellyfin
+  namespace: homepage
+spec:
+  encryptedData:
+    apikey: AgByn6XRE2FDoPaCaBLepw2iIkTJkQnmlueuPdQmZ/3BGYJStknco34hLDrOjiy6iZd9vfBzEkGUO2ARAhF6om3N/NRBiHTRQpArHC6Ruiyj85368ZBk5STwo/knUCgsnl7PiYLMHuLbfFbMqPOQI3Vr9jeeR+LR3/CMUFe8X1rzd/M2mHBqwmrA1pDE5h91NwKmo6T2JdMSQYbYC3wdo3KnUATI3Mh5FjVvngB0HAt7raYfrrOy2L94kND218lziQuJ2prbpjeEWgV7Z/WrNfzX7gbYp2NA85N5ByDH3xdEFNAiqVdTL4NH5Q9jj9dkKA82TziA9E3rbss9R6dQBnVGQZUkhwmvBuwP3Je/1GIOMmQEGTgaaLd+8Brre/GaZ5OU0BopywI9el1KCKMSKqESJGffoAzKKzgiK3mSrOXBigD5EA7xLL/6wi0ASQCQgOi9peKTxzOkkueffhbJomrRzhBNaUwUSHeQi04IBsBYhEKB1NdJkO6IcD7bWC041nIu7OMTKYpvj8Sdn+pdX2TDWJF/dkW5Y3na9CmuBDmnn7FcP6bE24oIj3Vw/+O3+4Y8Fd+ufMtVu7bmcu2j2Eqm0FtX54KjTBzx5FnEStkEbVp4XgJNMZqJZY65cazhCb+aBHySYkKwDeSn41bzMjonQbrQkf79jATIDLH8o7yw1AqyUxUiiyj2+/pzXVnmgp3uk88lZUwYgOxioPcDMfZnZca4DITnLYqKlmrz4Ff8yw==
+  template:
+    metadata:
+      creationTimestamp: null
+      name: homepage-jellyfin
+      namespace: homepage
