@@ -1,0 +1,15 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: homepage-pihole
+  namespace: homepage
+spec:
+  encryptedData:
+    password: AgAG853ZRRMUOUK7t2gSoX6PMyDW9b8lic52sXZzSHTuAfRZaWYGUJ8FWkKeCk0igmNntMWDEgUGeEBDypELMUBVpX99Bu0c6dNf0P7CknoO7t3iUwofedIvQPefiIXVo+nchkl5bTRMl04uimmTyv82cEoHIPC8V/+onID/t4IEOPbFT0m0ZZLGOIkgKmEAINmBk/VkbhYxNrI2UpU2OfHlw9+twqV7ma/rwSIMwRk9+WjLqIfvCFDT2deFDxLn13KxOr5w/5mN8wco0WgTZHaWWlvNJdKkq8ecFMk3lLHSc+Z0wALtwwrsXOMlWfsXUi7wuf08CPJqQfu5wOFA2nejZCTx6SW9Z253twW7lrrol6FwHjCWIAOW23a4ksr9DF/4edvsWdQF2UVkvT9PL8nLYWih9mYMkC0JxqrKcjfDl1NyQnNGv4HCpIg2T6D5ocw4fnQWEPH8u1ovdf1ATOUng5BxKCoSqrOwTYrmDfBF+YebeBSuDu3izcCrWMXxJMaP9opFzvhT8QDF2MJgTp30Pr8tysICulEhVxS46AZyOR+0WyPPJPeEXCObXFpl4OF2L+yCJV+Z8IU8h6lO8KUHqkO2HXvFqL1eOobVyjwsfmiftLEkssK+mtBe/bFTgWGUqzGKRVwI+7P/t8mlci0PgK7VdU3YzRkUTCrcdph443IULCpw84b4brv6qeBd7u/OHgiUvd3qacJPgdW10VWfGXvybb0OVd+3vt0MJZNFR5p1lncSDJ62bU8Acw==
+  template:
+    metadata:
+      creationTimestamp: null
+      name: homepage-pihole
+      namespace: homepage
