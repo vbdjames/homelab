@@ -148,6 +148,10 @@ data:
             href: https://argocd.fiddlestick.org
             description: GitOps deployments
             icon: argo-cd.png
+            widget:
+              type: argocd
+              url: http://argocd-server.argocd.svc.cluster.local
+              key: "{{HOMEPAGE_VAR_ARGOCD_TOKEN}}"
 
     - Media Management:
         - Sonarr:
@@ -240,6 +244,11 @@ spec:
                 secretKeyRef:
                   name: homepage-proxmox
                   key: secret
+            - name: HOMEPAGE_VAR_ARGOCD_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-argocd
+                  key: token
             - name: HOMEPAGE_VAR_PIHOLE_PASSWORD
               valueFrom:
                 secretKeyRef:

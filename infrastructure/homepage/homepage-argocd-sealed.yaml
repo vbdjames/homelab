@@ -1,0 +1,15 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: homepage-argocd
+  namespace: homepage
+spec:
+  encryptedData:
+    token: AgCZq0GM2D57JacVPqNqNqmVOvZN1+NjKwyIrE7UvfirVrOXhe/NQOou1V6YPaa1Mp7r5Txh70CNFhtYUiS+OnDt9EFdN3t2RBzFwbJTBK+wT94c2mHtnmHhJR9qOxOFgzgz1efvUB9UUF97OWhzbJaS9jV+ZFKfjmWh+3ficQE85URRhWe+SYBqFrElwzyBHlL8taJ2IG/rEvc7wyfHn2Syd9oXJ1K2FTKK46+KFGUUhbxHa+/aX5DRPIexTCkb5Y/s8bX8y12S+MNDIdLofw6lMiYWEfTEwzB+//TN5tchLAuUpKqqlCN58whp0iA8AFIzqylJ6KVOWW6BVR84B30XurDVh3c5st/9S4ji11YePxX4Uolt+Dvgsc6UhZOI8MO7fuiyVBYN2j8q8/WAd/Ei+qzk0uV4Ozvgy8rbDwu8vorCvIMOXTvJDeD4OqO+ejMp/Rwf5mCmSFAclWEZBC39GqAxH5SurcuaIjBd7nJ8CPsssLi1aQHRBvfxgelmLNrk1l2VS6vINn8zRrtpJ8F9y0PtmcFMBK7rPxV0YuWkM4O0jQf7JQuDjNGFcsaz1Qa2VqNSJIW+f8SUyUd6MFHig+lRfEdAVAe72dmob0VWw97F5s1SS68ZHEp8aNVv9ezihfCjzkZHgaqpNKN3QLl5vp2g2kspZRlJDXyn6s1W09vd4nG1Y2rgEVpMlb83xPXjZMXssLtu+NKqIZbQ1SaLnFrxk8eeNeau4Jy8wPMZfKva9nhndptVMjG/CooKU/H84Di9c8XKP6RKXEJcJ6HTxHgK0BU/iV6pmwMywfdAuTnR2pTSOU4Yw6s0kiD1zBHXkBr8g0x/d5d2NxUmzgs+8ISaP+ME0h0JCZ0EkK8L8MhI8z6I+IirGB6smJhJzyusTruYCB5BHZBiwTx4Mnvigk8OcJAvlUJScW4BBrl9uYptGneuIyMwcexuliausV5uzWoeeISG8qu6UC3ETV3I7iwlMV1u4RUGLgS0b4soJq9BpSDK8XORBCzfbrfkkUU=
+  template:
+    metadata:
+      creationTimestamp: null
+      name: homepage-argocd
+      namespace: homepage
