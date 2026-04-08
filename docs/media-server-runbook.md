@@ -236,6 +236,42 @@ No Sonarr, Radarr, or Bazarr involvement.
 
 ---
 
+## Open Questions
+
+### RiffTrax (and similar riff/commentary content)
+
+> **TO DECIDE:** How to organize RiffTrax feature films in the library.
+
+RiffTrax doesn't fit cleanly into the movie or TV show model. Options:
+
+| Option | How | Pros | Cons |
+|---|---|---|---|
+| **Jellyfin Collection** | Import each as a normal movie via Radarr, group them in a Jellyfin Collection | Jellyfin-native grouping, no file hacks | Radarr treats them as real movies, may nag about quality upgrades |
+| **Fake TV show in Sonarr** | Add "RiffTrax" as a custom series, organize by season (year or category) | Clean folder structure, Bazarr monitors it | Manual naming required; TVDB won't have it |
+| **Direct Jellyfin folder (no arr)** | Drop files in `/media/rifftrax/`, add as a Mixed Content library | Simplest, no matching overhead | No Bazarr subtitle fetching (likely moot — subtitles for riffs rarely exist on providers) |
+
+The collection is mostly feature films. Subtitles are low value for RiffTrax since the riff is the audio track.
+
+### Tech Talk Videos
+
+> **TO DECIDE:** How to organize conference talks, lectures, and other tech video content.
+
+Similar problem to RiffTrax — doesn't fit movies or TV. Additional wrinkle: there may be
+a lot of these, and they're often logically grouped by conference (WWDC, Strange Loop, etc.)
+or topic rather than by title.
+
+| Option | How | Pros | Cons |
+|---|---|---|---|
+| **Fake TV show per conference** | One Sonarr series per conference (e.g. "WWDC"), seasons by year, episodes per talk | Clean browsing by conference/year; Bazarr monitors | Manual naming; nothing in TVDB; lots of series to manage if many conferences |
+| **Direct Jellyfin folders (no arr)** | `/media/tech-talks/<Conference>/`, add as Mixed Content library | Simple, flexible folder structure | No arr involvement; no subtitles via Bazarr |
+| **Single catch-all folder** | `/media/tech-talks/`, all files flat or loosely organized | Minimal effort | Hard to browse at scale |
+
+Subtitles may actually be valuable here (especially for non-native English speakers or
+accessibility). Some conference talks have official subtitles available or on YouTube —
+worth downloading alongside the video rather than relying on Bazarr.
+
+---
+
 ## Troubleshooting
 
 ### Files not appearing in Jellyfin after import
