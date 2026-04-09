@@ -71,7 +71,7 @@ showmount -e 192.168.1.3
 | Share Name | Protocol | Path | Purpose |
 |---|---|---|---|
 | `kubernetes` | NFS | `/volume1/kubernetes` | Kubernetes persistent volumes |
-| `music` | SMB | `/volume1/music` | Music library — indexed by Sonos |
+| `music` | SMB + NFS | `/volume1/music` | Music library — indexed by Sonos (SMB), mounted by Jellyfin (NFS) |
 
 ---
 
@@ -108,6 +108,21 @@ Rather than using your admin account, create a minimal read-only account for Son
 3. On the **Groups** screen — leave at defaults (no extra groups needed)
 4. On the **Permissions** screen — grant **Read Only** on the `music` share; deny all others
 5. On the **Application Privileges** screen — enable **Windows File Service (SMB)** only; disable everything else
+
+### Configure NFS export on the music share
+
+Jellyfin accesses the music library via NFS, so the `music` share needs an NFS export
+alongside the SMB share (same settings as `kubernetes` and `jellyfin`):
+
+1. **Control Panel → Shared Folder** → select `music` → **Edit → NFS Permissions → Create**
+2. Set:
+   - **Hostname or IP:** `192.168.1.0/24`
+   - **Privilege:** `Read/Write`
+   - **Squash:** `No mapping`
+   - **Security:** `sys`
+   - **Enable asynchronous:** checked
+   - **Allow connections from non-privileged ports:** checked
+3. Click Save and Apply
 
 ### Enable SMB
 

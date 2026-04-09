@@ -26,6 +26,20 @@ spec:
     requests:
       storage: 5Ti
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jellyfin-music
+  namespace: jellyfin
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: jellyfin-music
+  resources:
+    requests:
+      storage: 1Ti
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -58,6 +72,8 @@ spec:
               mountPath: /config
             - name: media
               mountPath: /media
+            - name: music
+              mountPath: /music
           resources:
             requests:
               memory: 512Mi
@@ -74,6 +90,9 @@ spec:
         - name: media
           persistentVolumeClaim:
             claimName: jellyfin-media
+        - name: music
+          persistentVolumeClaim:
+            claimName: jellyfin-music
 ---
 apiVersion: v1
 kind: Service

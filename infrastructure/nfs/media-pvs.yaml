@@ -19,6 +19,26 @@ spec:
   mountOptions:
     - nfsvers=4.1
 ---
+# Static PV for Jellyfin namespace — mounts root of /volume1/music
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: jellyfin-music
+spec:
+  capacity:
+    storage: 1Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  csi:
+    driver: nfs.csi.k8s.io
+    volumeHandle: 192.168.1.3/volume1/music#jellyfin-ns
+    volumeAttributes:
+      server: 192.168.1.3
+      share: /volume1/music
+  mountOptions:
+    - nfsvers=4.1
+---
 # Static PV for arr namespace — mounts root of /volume1/jellyfin
 apiVersion: v1
 kind: PersistentVolume
