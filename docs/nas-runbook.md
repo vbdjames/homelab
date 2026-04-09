@@ -71,6 +71,7 @@ showmount -e 192.168.1.3
 | Share Name | Protocol | Path | Purpose |
 |---|---|---|---|
 | `kubernetes` | NFS | `/volume1/kubernetes` | Kubernetes persistent volumes |
+| `music` | SMB | `/volume1/music` | Music library — indexed by Sonos |
 
 ---
 
@@ -79,6 +80,71 @@ showmount -e 192.168.1.3
 | Resource | Access | Notes |
 |---|---|---|
 | `/volume1/kubernetes` | `192.168.1.0/24` read/write | All cluster nodes; no root squash |
+
+---
+
+## Music Library (Sonos)
+
+Sonos indexes music directly from an SMB share on the NAS. No extra software required.
+
+### Create the music share
+
+1. **Control Panel → Shared Folder → Create**
+2. Set:
+   - **Name:** `music`
+   - **Description:** Music library
+   - **Location:** Volume 1
+3. On the permissions screen, grant the `sonos` DSM user **Read Only** (create this user first — see below)
+
+### Create a dedicated Sonos DSM user
+
+Rather than using your admin account, create a minimal read-only account for Sonos:
+
+1. **Control Panel → User & Group → Create**
+2. Set:
+   - **Username:** `sonos`
+   - **Password:** a strong password (Sonos will store this)
+   - **Email:** leave blank
+3. On the **Groups** screen — leave at defaults (no extra groups needed)
+4. On the **Permissions** screen — grant **Read Only** on the `music` share; deny all others
+5. On the **Application Privileges** screen — enable **Windows File Service (SMB)** only; disable everything else
+
+### Enable SMB
+
+SMB is likely already enabled if you use the NAS for anything else. To verify:
+
+1. **Control Panel → File Services → SMB**
+2. Ensure **Enable SMB service** is checked
+3. Click Apply
+
+### Add the share to Sonos
+
+1. Open the **Sonos** app → **Settings → Services & Voice → Music Library**
+2. Tap **Add Music Source → Add a shared drive or NAS**
+3. Enter:
+   - **Path:** `\\192.168.1.3\music` (or `//192.168.1.3/music` on Mac/Linux)
+   - **Username / Password:** `sonos` / the password you set above
+4. Sonos will index the library — this may take a few minutes depending on library size
+
+### Directory structure
+
+Sonos reads metadata from file tags (ID3, FLAC, etc.) rather than folder structure, but
+a clean layout makes manual browsing easier:
+
+```
+/volume1/music/
+  Artist Name/
+    Album Name (Year)/
+      01 - Track Title.flac
+      02 - Track Title.flac
+      ...
+```
+
+### Re-indexing after adding music
+
+Sonos does not watch for changes automatically. After adding new files to the share:
+
+**Sonos app → Settings → Services & Voice → Music Library → [your NAS] → Update Music Library**
 
 ---
 
