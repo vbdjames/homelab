@@ -233,8 +233,8 @@ need to be renamed into the `Name (Year)/Name (Year).ext` format before Radarr/S
 import them. Common scenarios: Emby/Plex library migrations, bulk ARM rips, pre-organized
 collections from another system.
 
-The FileBot job manifest lives at `infrastructure/arr/filebot-job.yaml`. It is **not** managed
-by ArgoCD — apply and delete it manually.
+The FileBot job manifest lives at `docs/filebot-job.yaml`. It is **not** in an ArgoCD-managed
+path — apply and delete it manually each time.
 
 **Step 1 — Preview (dry run)**
 
