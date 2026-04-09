@@ -226,6 +226,60 @@ descriptively before moving (e.g. `Albert Finney Interview.mkv` rather than `VTS
 
 After moving extras, trigger a Jellyfin library scan: Dashboard → Libraries → Scan All Libraries.
 
+### Batch Renaming with FileBot
+
+Use FileBot when you have a directory of files with inconsistent or unrecognizable names that
+need to be renamed into the `Name (Year)/Name (Year).ext` format before Radarr/Sonarr can
+import them. Common scenarios: Emby/Plex library migrations, bulk ARM rips, pre-organized
+collections from another system.
+
+The FileBot job manifest lives at `infrastructure/arr/filebot-job.yaml`. It is **not** managed
+by ArgoCD — apply and delete it manually.
+
+**Step 1 — Preview (dry run)**
+
+Edit the job to point at your source directory (currently set to `/media/fromemby`), confirm
+`--action test` is set, then apply:
+
+```bash
+# Edit source path in the manifest if needed, then:
+kubectl apply -f infrastructure/arr/filebot-job.yaml
+kubectl logs -n arr job/filebot-rename --follow
+```
+
+Review the output — FileBot prints each rename it would perform. Verify the matches look
+correct before proceeding.
+
+**Step 2 — Run for real**
+
+Change `--action test` to `--action move` in the manifest, delete the completed job, and
+re-apply:
+
+```bash
+kubectl delete job -n arr filebot-rename
+# Edit manifest: --action test → --action move
+kubectl apply -f infrastructure/arr/filebot-job.yaml
+kubectl logs -n arr job/filebot-rename --follow
+```
+
+**Step 3 — Clean up**
+
+```bash
+kubectl delete job -n arr filebot-rename
+```
+
+**Adapting for different use cases**
+
+| Need | Change |
+|---|---|
+| Different source directory | Edit the path argument (`/media/fromemby` → your path) |
+| TV shows instead of movies | Change `--db TheMovieDB` to `--db TheTVDB` and update `--format` |
+| Movies format | Current format `{n} ({y})/{n} ({y})` → creates `Name (Year)/Name (Year).ext` |
+| TV format | Use `{n}/Season {s}/{n} - {s00e00} - {t}` for Sonarr-compatible naming |
+
+After FileBot renames the files, use Sonarr/Radarr **Manual Import** to bring them into the
+managed library (see the Manual Import workflows above).
+
 ### Adding Home Movies
 
 1. Copy files into `/volume1/jellyfin/home-movies/` on the NAS directly
