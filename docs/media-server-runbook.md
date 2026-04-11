@@ -288,23 +288,42 @@ managed library (see the Manual Import workflows above).
 
 No Sonarr, Radarr, or Bazarr involvement.
 
+### Moving a File from Movies to TV (Reclassification)
+
+Use this when a file has been imported as a movie but actually belongs to a TV show.
+
+1. **In Radarr** — find the movie, click **Delete**, and choose **"Do not delete file"** (unlink only). This removes Radarr's tracking without touching the file on disk.
+2. **Rename and move the file** on the NAS into the correct TV show path with a Sonarr-compatible filename:
+   ```bash
+   # Example: RiffTrax S01E200 "Radical Jack"
+   mv "/media/movies/Radical Jack (2001)/Radical Jack (2001).m4v" \
+      "/media/tv/RiffTrax/Season 01/RiffTrax - S01E200 - Radical Jack.m4v"
+   # Clean up the now-empty movie folder
+   rmdir "/media/movies/Radical Jack (2001)"
+   ```
+3. **In Sonarr** — find the episode, mark it as **Monitored**, then go to **Wanted → Manual Import**, browse to the file, and import it. Sonarr will rename it to match its naming convention.
+4. Jellyfin will pick it up on the next scan.
+
+> ℹ️ Do not delete the file from Radarr — always unlink only, then move. Deleting from Radarr deletes the file from disk before you can hand it to Sonarr.
+
+---
+
+## Known Issues
+
+### Android TV — Music Playback
+
+Jellyfin's Android TV app has unreliable audio playback — some files play, others do not.
+Symfonium causes the TV to become unresponsive when installed.
+
+**Status:** Unsolved / backburner.
+
 ---
 
 ## Open Questions
 
 ### RiffTrax (and similar riff/commentary content)
 
-> **TO DECIDE:** How to organize RiffTrax feature films in the library.
-
-RiffTrax doesn't fit cleanly into the movie or TV show model. Options:
-
-| Option | How | Pros | Cons |
-|---|---|---|---|
-| **Jellyfin Collection** | Import each as a normal movie via Radarr, group them in a Jellyfin Collection | Jellyfin-native grouping, no file hacks | Radarr treats them as real movies, may nag about quality upgrades |
-| **Fake TV show in Sonarr** | Add "RiffTrax" as a custom series, organize by season (year or category) | Clean folder structure, Bazarr monitors it | Manual naming required; TVDB won't have it |
-| **Direct Jellyfin folder (no arr)** | Drop files in `/media/rifftrax/`, add as a Mixed Content library | Simplest, no matching overhead | No Bazarr subtitle fetching (likely moot — subtitles for riffs rarely exist on providers) |
-
-The collection is mostly feature films. Subtitles are low value for RiffTrax since the riff is the audio track.
+**Resolved.** RiffTrax is a TV series with TVDB entries — managed by Sonarr like any other show, organized under `/media/tv/RiffTrax/`.
 
 ### Tech Talk Videos
 
@@ -335,6 +354,25 @@ Jellyfin may not have scanned yet. Trigger a manual scan:
 ```bash
 # Or use the UI: Dashboard → Libraries → Scan All Libraries
 kubectl logs -n jellyfin -l app=jellyfin --tail=50 | grep -i "scan\|library"
+```
+
+If files still don't appear after a scan, check the Jellyfin log for errors:
+
+```bash
+kubectl exec -n jellyfin deploy/jellyfin -- cat /config/log/log_$(date +%Y%m%d).log | grep ERR
+```
+
+A known DB bug (`UNIQUE constraint failed: UserData.ItemId`) can cause the scan to abort
+mid-way through a folder, leaving newly added files unindexed. The error occurs when
+Jellyfin tries to clean up a deleted item's UserData and conflicts with an existing sentinel
+row. **Fix: run the scan a second time** — the conflicting deletion is already done, so the
+second pass completes cleanly and picks up the missing files.
+
+Trigger via API:
+```bash
+kubectl exec -n jellyfin deploy/jellyfin -- curl -s -X POST \
+  "http://localhost:8096/Library/Refresh" \
+  -H "X-Emby-Token: <api-key>"
 ```
 
 ### Sonarr/Radarr can't see files in imports/
