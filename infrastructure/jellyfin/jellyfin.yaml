@@ -74,6 +74,8 @@ spec:
               mountPath: /media
             - name: music
               mountPath: /music
+            - name: dri
+              mountPath: /dev/dri
           resources:
             requests:
               memory: 512Mi
@@ -93,6 +95,10 @@ spec:
         - name: music
           persistentVolumeClaim:
             claimName: jellyfin-music
+        - name: dri
+          hostPath:
+            path: /dev/dri
+            type: Directory
 ---
 apiVersion: v1
 kind: Service
