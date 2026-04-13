@@ -1,7 +1,12 @@
 # Wallabag Runbook
 
-> **Status:** Active — running at `https://wallabag.fiddlestick.org`
+> **Status:** Retired 2026-04-13 — removed due to poor iOS share sheet support
 > **Stack:** Wallabag · PostgreSQL · NFS storage
+
+> **Note:** Evaluated as a read-it-later service but retired after no iOS app could
+> successfully save articles via the share sheet. The web UI and API work correctly;
+> the limitation is client-side. **Karakeep** is the planned replacement — see
+> `notes/future-work.md`.
 
 ---
 
