@@ -95,6 +95,10 @@ data:
               url: http://calibre-web.calibre-web.svc.cluster.local:8083
               username: "{{HOMEPAGE_VAR_CALIBRE_USERNAME}}"
               password: "{{HOMEPAGE_VAR_CALIBRE_PASSWORD}}"
+        - Wallabag:
+            href: https://wallabag.fiddlestick.org
+            description: Read-it-later
+            icon: wallabag.png
         - Jellyfin:
             href: https://jellyfin.fiddlestick.org
             description: Media server
