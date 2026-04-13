@@ -11,6 +11,7 @@
     "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
   },
   "postCreateCommand": "echo 'source /workspaces/homelab/.devcontainer/bashrc' >> ~/.bashrc",
+  "postStartCommand": "mkdir -p /workspaces/homelab/notes/claude-memory ~/.claude/projects/-workspaces-homelab && rm -rf ~/.claude/projects/-workspaces-homelab/memory && ln -sfn /workspaces/homelab/notes/claude-memory ~/.claude/projects/-workspaces-homelab/memory",
   "mounts": [
     "source=${localEnv:HOME}/.claude,target=/home/vscode/.claude,type=bind,consistency=cached",
     "source=${localEnv:HOME}/.kube,target=/home/vscode/.kube,type=bind,consistency=cached"
