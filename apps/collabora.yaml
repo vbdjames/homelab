@@ -1,0 +1,59 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: collabora
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  sources:
+    - repoURL: git@github.com:vbdjames/homelab.git
+      targetRevision: HEAD
+      path: infrastructure/collabora
+
+    - repoURL: https://collaboraonline.github.io/online/
+      chart: collabora-online
+      targetRevision: "1.1.60"
+      helm:
+        values: |
+          collabora:
+            domain: nextcloud\\.fiddlestick\\.org
+            server_name: collabora.fiddlestick.org
+            existingSecret:
+              enabled: true
+              secretName: collabora-secrets
+              usernameKey: username
+              passwordKey: password
+
+          ingress:
+            enabled: true
+            className: nginx
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              nginx.ingress.kubernetes.io/proxy-body-size: "0"
+              nginx.ingress.kubernetes.io/proxy-read-timeout: "600"
+              nginx.ingress.kubernetes.io/proxy-send-timeout: "600"
+            tls:
+              - secretName: collabora-tls
+                hosts:
+                  - collabora.fiddlestick.org
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1500Mi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: collabora
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

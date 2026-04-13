@@ -1,0 +1,88 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: nextcloud
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  sources:
+    - repoURL: git@github.com:vbdjames/homelab.git
+      targetRevision: HEAD
+      path: infrastructure/nextcloud
+
+    - repoURL: https://nextcloud.github.io/helm/
+      chart: nextcloud
+      targetRevision: "9.0.5"
+      helm:
+        values: |
+          nextcloud:
+            host: nextcloud.fiddlestick.org
+            existingSecret:
+              enabled: true
+              secretName: nextcloud-secrets
+              usernameKey: nextcloud-username
+              passwordKey: nextcloud-password
+            phpConfigs:
+              uploadLimit.ini: |
+                upload_max_filesize = 16G
+                post_max_size = 16G
+                max_input_time = 3600
+                max_execution_time = 3600
+
+          ingress:
+            enabled: true
+            className: nginx
+            annotations:
+              cert-manager.io/cluster-issuer: letsencrypt-prod
+              nginx.ingress.kubernetes.io/proxy-body-size: "16g"
+              nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+              nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+            tls:
+              - secretName: nextcloud-tls
+                hosts:
+                  - nextcloud.fiddlestick.org
+
+          persistence:
+            enabled: true
+            storageClass: nfs
+            size: 50Gi
+
+          postgresql:
+            enabled: true
+            global:
+              postgresql:
+                auth:
+                  existingSecret: nextcloud-secrets
+                  secretKeys:
+                    adminPasswordKey: db-password
+                    userPasswordKey: db-password
+                    replicationPasswordKey: db-password
+
+          redis:
+            enabled: true
+            auth:
+              enabled: true
+              existingSecret: nextcloud-secrets
+              existingSecretPasswordKey: redis-password
+
+          resources:
+            requests:
+              memory: 512Mi
+              cpu: 200m
+            limits:
+              memory: 1Gi
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: nextcloud
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
