@@ -18,6 +18,11 @@ spec:
       targetRevision: "1.1.60"
       helm:
         values: |
+          replicaCount: 1
+
+          autoscaling:
+            enabled: false
+
           collabora:
             domain: nextcloud\\.fiddlestick\\.org
             server_name: collabora.fiddlestick.org
