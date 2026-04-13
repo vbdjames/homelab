@@ -85,6 +85,10 @@ spec:
           securityContext:
             runAsUser: 0
             runAsGroup: 0
+            # privileged is required for cgroup device access to /dev/dri/renderD128 (VAAPI/Quick Sync).
+            # The cleaner alternative is the Intel GPU device plugin, which handles device allowlisting
+            # natively, but adds operational overhead not warranted for a homelab.
+            privileged: true
       volumes:
         - name: config
           persistentVolumeClaim:
