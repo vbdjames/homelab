@@ -1,0 +1,149 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arm-config
+  namespace: arm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: arm-media
+  namespace: arm
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: arm-media
+  resources:
+    requests:
+      storage: 2Ti
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arm
+  namespace: arm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arm
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: arm
+    spec:
+      securityContext:
+        fsGroup: 1000
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+              - matchExpressions:
+                  - key: homelab/optical-drive
+                    operator: In
+                    values:
+                      - "true"
+      initContainers:
+        - name: fix-permissions
+          image: busybox
+          command: ["sh", "-c", "mkdir -p /home/arm /home/arm/etc-arm-config && chown -R 1000:1000 /home/arm"]
+          volumeMounts:
+            - name: config
+              mountPath: /home/arm
+          securityContext:
+            runAsUser: 0
+      containers:
+        - name: arm
+          image: automaticrippingmachine/automatic-ripping-machine:latest
+          env:
+            - name: TZ
+              value: America/New_York
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: config
+              mountPath: /home/arm
+            - name: config
+              mountPath: /etc/arm/config
+              subPath: etc-arm-config
+            - name: media
+              mountPath: /home/arm/media
+            - name: sr0
+              mountPath: /dev/sr0
+            - name: udev
+              mountPath: /run/udev
+              readOnly: true
+            - name: sr0-mountpoint
+              mountPath: /mnt/dev/sr0
+          resources:
+            requests:
+              memory: 256Mi
+              cpu: 100m
+            limits:
+              memory: 2Gi
+          securityContext:
+            privileged: true
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: arm-config
+        - name: media
+          persistentVolumeClaim:
+            claimName: arm-media
+        - name: sr0
+          hostPath:
+            path: /dev/sr0
+            type: BlockDevice
+        - name: udev
+          hostPath:
+            path: /run/udev
+            type: Directory
+        - name: sr0-mountpoint
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: arm
+  namespace: arm
+spec:
+  selector:
+    app: arm
+  ports:
+    - port: 8080
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: arm
+  namespace: arm
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - arm.fiddlestick.org
+      secretName: arm-tls
+  rules:
+    - host: arm.fiddlestick.org
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: arm
+                port:
+                  number: 8080
