@@ -8,7 +8,9 @@ This runbook covers preparing the USB install media and the step-by-step procedu
 - USB stick 1 — boot stick (8 GB minimum, holds the Ubuntu ISO)
 - USB stick 2 — config stick (any size, holds `user-data`)
 - Laptop (Linux) as the workstation for preparing media
-- Wyse 5070 servers to be provisioned
+- Wyse 5070 servers to be provisioned (hl-01–hl-06); HP 8200 Elite for hl-07
+
+> **hl-07 note:** HP 8200 Elite boot menu is `F9`; BIOS is `F10`. Network interface is `eno1` (not `enp1s0`). File on config stick must be named exactly `user-data` — no extension.
 
 ---
 
@@ -96,6 +98,7 @@ Each server has a pre-configured `user-data` file with the correct hostname and 
 | hl-04 | `user-data/user-data-hl-04.yml` | `192.168.1.153` |
 | hl-05 | `user-data/user-data-hl-05.yml` | `192.168.1.154` |
 | hl-06 | `user-data/user-data-hl-06.yml` | `192.168.1.155` |
+| hl-07 | `user-data/user-data-hl-07.yml` | `192.168.1.156` |
 
 ```bash
 sudo mount /dev/sdY /mnt/cidata
@@ -165,6 +168,7 @@ If SSH fails:
 - [x] `hl-04` — config stick loaded, installed, SSH verified
 - [x] `hl-05` — config stick loaded, installed, SSH verified
 - [x] `hl-06` — config stick loaded, installed, SSH verified
+- [ ] `hl-07` — config stick loaded, installed, SSH verified
 
 ---
 

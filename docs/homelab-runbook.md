@@ -72,6 +72,7 @@ A record of every significant decision and its rationale. Update this section if
 | `hl-04` | Worker | `192.168.1.153` |
 | `hl-05` | Worker | `192.168.1.154` |
 | `hl-06` | Worker | `192.168.1.155` |
+| `hl-07` | Worker (HP 8200 Elite, optical drive) | `192.168.1.156` |
 | `nas` | NAS | `192.168.1.3` |
 
 ### Cluster CIDRs
@@ -515,6 +516,7 @@ kubectl port-forward svc/argocd-server -n argocd 8080:443
 | `hl-04` (worker) | `192.168.1.153` ✅ |
 | `hl-05` (worker) | `192.168.1.154` ✅ |
 | `hl-06` (worker) | `192.168.1.155` ✅ |
+| `hl-07` (worker, HP 8200 Elite) | `192.168.1.156` ✅ |
 | `nas-01` (Synology NAS) | `192.168.1.3` ✅ |
 
 ---
