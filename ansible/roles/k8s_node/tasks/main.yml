@@ -87,7 +87,10 @@
 - name: Generate default containerd config
   ansible.builtin.shell:
     cmd: containerd config default > /etc/containerd/config.toml
-    creates: /etc/containerd/config.toml
+  # Always regenerate — the Docker package ships a config with disabled_plugins = ["cri"]
+  # which breaks kubeadm. Do not use 'creates:' here.
+  changed_when: true
+  notify: Restart containerd
 
 - name: Enable SystemdCgroup in containerd config
   ansible.builtin.replace:
