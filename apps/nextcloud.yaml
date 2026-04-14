@@ -68,6 +68,27 @@ spec:
               existingSecret: nextcloud-secrets
               existingSecretPasswordKey: redis-password
 
+          startupProbe:
+            enabled: true
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 30
+
+          livenessProbe:
+            enabled: true
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
+          readinessProbe:
+            enabled: true
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 3
+
           resources:
             requests:
               memory: 512Mi
