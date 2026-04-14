@@ -43,6 +43,23 @@ The pod will be `Running` but not `Ready` until initialization completes. This i
   before init completes. Already configured in `apps/nextcloud.yaml`.
 - **Memory** — Nextcloud requires 2Gi during initialization. Limit is set to 2Gi in
   `apps/nextcloud.yaml`.
+- **Reverse proxy / HTTPS config** — after first deploy, run these `occ` commands to
+  tell Nextcloud it's behind an HTTPS-terminating proxy (otherwise Collabora will get
+  HTTP redirect loops when calling WOPI endpoints):
+
+  ```bash
+  kubectl exec -n nextcloud deployment/nextcloud -- su -s /bin/sh www-data -c "
+    php occ config:system:set overwriteprotocol --value='https'
+    php occ config:system:set overwritehost --value='nextcloud.fiddlestick.org'
+    php occ config:system:set trusted_proxies 0 --value='10.0.0.0/8'
+    php occ config:system:set trusted_proxies 1 --value='172.16.0.0/12'
+    php occ config:system:set trusted_proxies 2 --value='192.168.0.0/16'
+  "
+  ```
+
+  These are stored in `config.php` on the PVC and survive pod restarts, but must be
+  re-run if the PVC is ever recreated. The Helm chart `configs:` key cannot be used
+  for this — it creates a volumeMount conflict with the chart's own config directory.
 
 ---
 
@@ -58,6 +75,11 @@ The pod will be `Running` but not `Ready` until initialization completes. This i
 6. Click **Save** — the green tick confirms Nextcloud can reach Collabora
 7. In the **WOPI allow-list** field enter: `10.0.0.0/8,172.16.0.0/12,192.168.0.0/16`
 8. Click **Save** — this restricts WOPI requests to RFC1918 addresses (appropriate for a homelab where Collabora and Nextcloud are on the same internal network)
+
+> **Note:** `--o:security.capabilities=false` is set in `apps/collabora.yaml` so
+> Collabora doesn't attempt filesystem mounts for process jails (requires `SYS_ADMIN`
+> which is not available in a standard Kubernetes pod). Without this flag, documents
+> fail to open with "No child available".
 
 ### 2. LDAP Integration
 
@@ -78,6 +100,10 @@ The pod will be `Running` but not `Ready` until initialization completes. This i
 **Users tab:**
 - Object classes: `person`
 - Search attributes: `uid`, `mail`
+
+> **Important:** The `svc-nextcloud` service account must be a member of the
+> `lldap_strict_readonly` group in lldap. Without this, the account can only read
+> its own entry and Nextcloud will find only 1 user (itself).
 
 **Login attributes tab:**
 - LDAP attribute: `uid`
