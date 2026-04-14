@@ -26,6 +26,7 @@ spec:
           collabora:
             domain: nextcloud\\.fiddlestick\\.org
             server_name: collabora.fiddlestick.org
+            extra_params: "--o:ssl.enable=false --o:ssl.termination=true"
             existingSecret:
               enabled: true
               secretName: collabora-secrets
