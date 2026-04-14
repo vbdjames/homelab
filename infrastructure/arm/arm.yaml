@@ -81,9 +81,6 @@ spec:
               mountPath: /home/arm/media
             - name: sr0
               mountPath: /dev/sr0
-            - name: udev
-              mountPath: /run/udev
-              readOnly: true
             - name: sr0-mountpoint
               mountPath: /mnt/dev/sr0
           resources:
@@ -105,10 +102,6 @@ spec:
           hostPath:
             path: /dev/sr0
             type: BlockDevice
-        - name: udev
-          hostPath:
-            path: /run/udev
-            type: Directory
         - name: sr0-mountpoint
           emptyDir: {}
 ---
