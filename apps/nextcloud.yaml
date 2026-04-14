@@ -25,6 +25,14 @@ spec:
               secretName: nextcloud-secrets
               usernameKey: nextcloud-username
               passwordKey: nextcloud-password
+            configs:
+              reverse-proxy.config.php: |-
+                <?php
+                $CONFIG = [
+                  'overwriteprotocol' => 'https',
+                  'overwritehost' => 'nextcloud.fiddlestick.org',
+                  'trusted_proxies' => ['10.0.0.0/8', '172.16.0.0/12', '192.168.0.0/16'],
+                ];
             phpConfigs:
               uploadLimit.ini: |
                 upload_max_filesize = 16G
