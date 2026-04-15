@@ -79,8 +79,6 @@ spec:
               subPath: etc-arm-config
             - name: media
               mountPath: /home/arm/media
-            - name: sr0
-              mountPath: /dev/sr0
             - name: sr0-mountpoint
               mountPath: /mnt/dev/sr0
           resources:
@@ -98,10 +96,6 @@ spec:
         - name: media
           persistentVolumeClaim:
             claimName: arm-media
-        - name: sr0
-          hostPath:
-            path: /dev/sr0
-            type: BlockDevice
         - name: sr0-mountpoint
           emptyDir: {}
 ---
