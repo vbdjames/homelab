@@ -40,6 +40,20 @@ spec:
     requests:
       storage: 1Ti
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: jellyfin-arm-rips
+  namespace: jellyfin
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""
+  volumeName: jellyfin-arm-rips
+  resources:
+    requests:
+      storage: 2Ti
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -74,6 +88,8 @@ spec:
               mountPath: /media
             - name: music
               mountPath: /music
+            - name: arm-rips
+              mountPath: /arm-rips
             - name: dri
               mountPath: /dev/dri
           resources:
@@ -99,6 +115,9 @@ spec:
         - name: music
           persistentVolumeClaim:
             claimName: jellyfin-music
+        - name: arm-rips
+          persistentVolumeClaim:
+            claimName: jellyfin-arm-rips
         - name: dri
           hostPath:
             path: /dev/dri
