@@ -73,10 +73,7 @@ spec:
                 cert-manager.io/cluster-issuer: letsencrypt-prod
                 nginx.ingress.kubernetes.io/proxy-body-size: "0"
               hosts:
-                - host: authentik.fiddlestick.org
-                  paths:
-                    - path: /
-                      pathType: Prefix
+                - authentik.fiddlestick.org
               tls:
                 - secretName: authentik-tls
                   hosts:
