@@ -1,0 +1,84 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: immich
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: default
+
+  sources:
+    - repoURL: git@github.com:vbdjames/homelab.git
+      targetRevision: HEAD
+      path: infrastructure/immich
+
+    - repoURL: https://immich-app.github.io/immich-charts/
+      chart: immich
+      targetRevision: "0.11.1"
+      helm:
+        values: |
+          controllers:
+            main:
+              containers:
+                main:
+                  env:
+                    DB_HOSTNAME: immich-postgres
+                    DB_PORT: "5432"
+                    DB_DATABASE_NAME: immich
+                    DB_USERNAME: immich
+                    DB_PASSWORD:
+                      valueFrom:
+                        secretKeyRef:
+                          name: immich-db-secrets
+                          key: db-password
+
+          immich:
+            existingConfiguration: immich-config
+            configurationKind: Secret
+            persistence:
+              library:
+                existingClaim: immich-library
+
+          valkey:
+            enabled: true
+
+          server:
+            ingress:
+              main:
+                enabled: true
+                className: nginx
+                annotations:
+                  cert-manager.io/cluster-issuer: letsencrypt-prod
+                  nginx.ingress.kubernetes.io/proxy-body-size: "0"
+                hosts:
+                  - host: immich.fiddlestick.org
+                    paths:
+                      - path: /
+                        service:
+                          identifier: main
+                tls:
+                  - secretName: immich-tls
+                    hosts:
+                      - immich.fiddlestick.org
+
+          machine-learning:
+            persistence:
+              cache:
+                enabled: true
+                size: 10Gi
+                type: persistentVolumeClaim
+                storageClass: nfs
+                accessMode: ReadWriteMany
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: immich
+
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - ServerSideApply=true
