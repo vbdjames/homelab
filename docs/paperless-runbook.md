@@ -74,17 +74,41 @@ page with a "Login with Authentik" button.
 
 ## New User Permissions
 
-Auto-provisioned OIDC users are created with no permissions (can log in but see a
-blank dashboard). After a new user's first login, grant them access via the Django
-admin UI:
+Auto-provisioned OIDC users are created with no permissions — they can log in but
+see a blank dashboard and can't do anything. After a new user's first login, configure
+their account via the Django admin UI at `https://paperless.fiddlestick.org/admin/`.
 
-1. Log in as an admin at `https://paperless.fiddlestick.org/admin/`
-2. Go to **Authentication → Users** → click the new user
-3. Set **Staff status** and **Superuser status** as appropriate
+### Admin users (Doug)
+
+1. Go to **Authentication → Users → doug**
+2. Check **Superuser status** (grants full access, bypasses all permission checks)
+3. Leave **Staff status** unchecked unless you need Django admin access
 4. Save
 
-> **Note:** This is a known rough edge. A future improvement would be to auto-grant
-> permissions based on the Authentik group claim.
+### Family users (MJ and future)
+
+1. Have the user log in via Authentik first (creates the account)
+2. Go to `https://paperless.fiddlestick.org/admin/` → **Authentication → Users → \<username\>**
+3. Leave **Staff status** and **Superuser status** both **unchecked**
+4. Scroll to **User permissions** and grant:
+   - `documents | document | Can add document`
+   - `documents | document | Can change document`
+   - `documents | document | Can delete document`
+   - `documents | document | Can view document`
+   - `documents | tag | Can add/change/view tag`
+   - `documents | correspondent | Can add/change/view correspondent`
+   - `documents | document type | Can add/change/view document type`
+5. Save
+
+### Shared documents (Household group)
+
+To share documents between Doug and MJ:
+
+1. Go to **Authentication → Groups → Add group**
+2. Name it `Household`, grant the same document permissions as above
+3. Add Doug and MJ to the group
+4. When uploading a document, set its permissions to include the `Household` group
+   for documents meant to be shared; leave personal documents unshared
 
 ---
 
