@@ -120,6 +120,15 @@ spec:
               value: "0"
             - name: USERMAP_GID
               value: "0"
+            - name: PAPERLESS_APPS
+              value: allauth.socialaccount.providers.openid_connect
+            - name: PAPERLESS_ACCOUNT_EMAIL_VERIFICATION
+              value: none
+            - name: PAPERLESS_SOCIALACCOUNT_PROVIDERS
+              valueFrom:
+                secretKeyRef:
+                  name: paperless-oidc
+                  key: providers
           ports:
             - containerPort: 8000
           volumeMounts:
