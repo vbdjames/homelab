@@ -81,40 +81,42 @@ The pod will be `Running` but not `Ready` until initialization completes. This i
 > which is not available in a standard Kubernetes pod). Without this flag, documents
 > fail to open with "No child available".
 
-### 2. LDAP Integration
+### 2. Authentik OIDC
 
-1. Go to **Apps → Search** for "LDAP user and group backend" and install it
-2. Go to **Administration Settings → LDAP / AD Integration**
+Nextcloud uses the `user_oidc` app to authenticate via Authentik. Users are auto-provisioned
+on first login.
 
-**Server tab:**
-| Setting | Value |
-|---|---|
-| Host | `ldap://lldap.lldap.svc.cluster.local` |
-| Port | `3890` |
-| Bind DN | `uid=svc-nextcloud,ou=people,dc=fiddlestick,dc=org` |
-| Bind password | Stored in `nextcloud-secrets` (set when creating the SealedSecret) |
-| Base DN | `dc=fiddlestick,dc=org` |
+**Authentik side:**
+- Provider: `nextcloud` (OAuth2/OpenID, Confidential, Implicit consent)
+- Application slug: `nextcloud`
+- Redirect URI: `https://nextcloud.fiddlestick.org/apps/user_oidc/code`
+- Client ID and secret stored in 1Password
 
-> **Important:** There is a small enable/disable toggle at the top of the LDAP settings page. The configuration is saved but inactive until this toggle is switched on. Easy to miss.
+**Nextcloud side — configure via occ (do not use the UI discovery check, it is unreliable):**
 
-**Users tab:**
-- Object classes: `person`
-- Search attributes: `uid`, `mail`
+```bash
+kubectl exec -n nextcloud deployment/nextcloud -- su -s /bin/sh www-data -c "
+  php occ user_oidc:provider authentik \
+    --clientid='<client-id>' \
+    --clientsecret='<client-secret>' \
+    --discoveryuri='https://authentik.fiddlestick.org/application/o/nextcloud/.well-known/openid-configuration' \
+    --unique-uid=0
+"
+```
 
-> **Important:** The `svc-nextcloud` service account must be a member of the
-> `lldap_strict_readonly` group in lldap. Without this, the account can only read
-> its own entry and Nextcloud will find only 1 user (itself).
+**Required system config** (Nextcloud blocks server-side requests to private IPs by default):
 
-**Login attributes tab:**
-- LDAP attribute: `uid`
+```bash
+kubectl exec -n nextcloud deployment/nextcloud -- su -s /bin/sh www-data -c \
+  "php occ config:system:set allow_local_remote_servers --value=true --type=bool"
+```
 
-**Groups tab:**
-- Object classes: `groupOfUniqueNames`
-- Base DN: `ou=groups,dc=fiddlestick,dc=org`
+**Verify provider is configured:**
 
-> **Tip:** Create a dedicated `nextcloud` group in lldap and restrict Nextcloud access
-> to members of that group using the user filter:
-> `(&(objectclass=person)(memberOf=cn=nextcloud,ou=groups,dc=fiddlestick,dc=org))`
+```bash
+kubectl exec -n nextcloud deployment/nextcloud -- su -s /bin/sh www-data -c \
+  "php occ user_oidc:provider"
+```
 
 ---
 

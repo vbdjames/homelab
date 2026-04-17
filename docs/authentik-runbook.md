@@ -29,7 +29,12 @@ The `authentik-secrets` SealedSecret (namespace `authentik`) contains:
 
 Navigate to `https://authentik.fiddlestick.org/if/flow/initial-setup/` and set the admin email and password.
 
-### 2. Connect lldap as LDAP source
+### 2. Connect lldap as LDAP source (historical — lldap no longer used)
+
+> lldap has been replaced by native Authentik user management. This section is kept for
+> reference only. The lldap LDAP source is disabled in Authentik.
+
+
 
 This syncs your existing lldap users into Authentik.
 
@@ -91,7 +96,20 @@ lldap is the lightweight LDAP user directory that backs Authentik.
 
 ### User management
 
-All user management is done via the lldap web UI at `https://lldap.fiddlestick.org`. Authentik syncs from lldap — do **not** create users directly in Authentik, as they would not have LDAP passwords and would be out of sync.
+Users are managed directly in Authentik at **Directory → Users**. lldap is no longer used.
+
+**Groups:**
+- `authentik Admins` (built-in) — grants superuser access to Authentik itself
+- `admins` — used for app-level role mapping (Grafana, ArgoCD, etc.)
+- `family` — used for access control on family-facing apps
+
+**Current users:**
+- `akadmin` — break-glass account; keep password in 1Password, do not use day-to-day
+- `doug` — primary admin; member of `authentik Admins`, `admins`, and `family`
+- `mj` — family member; member of `family`
+
+**Adding a new user:** Directory → Users → Create. Set path to `users`, assign to appropriate
+groups, set a password via the Set Password button.
 
 ---
 

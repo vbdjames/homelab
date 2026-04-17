@@ -1,13 +1,13 @@
 # Media Server Runbook
 
-> **Status:** Active — Jellyfin, Sonarr, Radarr, and Bazarr running
-> **Stack:** Jellyfin · Sonarr · Radarr · Bazarr · Synology NAS (NFS)
+> **Status:** Active — Jellyfin, Sonarr, Radarr, Bazarr, and ARM running
+> **Stack:** Jellyfin · Sonarr · Radarr · Bazarr · ARM · Synology NAS (NFS)
 
 ---
 
 ## Overview
 
-A self-hosted media stack for TV shows, movies, and home movies.
+A self-hosted media stack for TV shows, movies, home movies, and music.
 
 | Component | Role | URL |
 |---|---|---|
@@ -15,9 +15,9 @@ A self-hosted media stack for TV shows, movies, and home movies.
 | Sonarr | TV show monitoring and organization | `https://sonarr.fiddlestick.org` |
 | Radarr | Movie monitoring and organization | `https://radarr.fiddlestick.org` |
 | Bazarr | Subtitle fetching and management | `https://bazarr.fiddlestick.org` |
-| ARM | Automatic Ripping Machine — future DVD/Blu-ray rips | — |
+| ARM | Automatic Ripping Machine — DVD/Blu-ray ripping | `https://arm.fiddlestick.org` |
 
-All components run in the `arr` namespace (except Jellyfin, which runs in `jellyfin`).
+All components run in the `arr` namespace (except Jellyfin in `jellyfin` and ARM in `arm`).
 
 ---
 
@@ -33,38 +33,80 @@ network copies.
 | Pod | PVC | Mount path | NAS path |
 |---|---|---|---|
 | Jellyfin | `jellyfin-media` | `/media` | `/volume1/jellyfin` |
+| Jellyfin | `jellyfin-music` | `/music` | `/volume1/music` |
+| Jellyfin | `jellyfin-arm-rips` | `/arm-rips` | `/volume1/arm` |
 | Sonarr | `arr-media` | `/media` | `/volume1/jellyfin` |
 | Radarr | `arr-media` | `/media` | `/volume1/jellyfin` |
 | Bazarr | `arr-media` | `/media` | `/volume1/jellyfin` |
+| ARM | `arm-media` | `/home/arm/media` | `/volume1/arm` |
 
 ### NAS Directory Structure
 
 ```
-/volume1/jellyfin/          (NAS root — appears as /media inside pods)
+/volume1/jellyfin/          (NAS root — appears as /media inside arr/jellyfin pods)
   tv/                       Organized TV library (Sonarr root folder, Jellyfin source)
   movies/                   Organized movie library (Radarr root folder, Jellyfin source)
   home-movies/              Home movies — managed directly, no arr involvement
   imports/                  Drop files here for Sonarr/Radarr manual import
+
+/volume1/music/             (appears as /music in Jellyfin pod)
+  <Artist>/<Album>/         Organized by abcde during CD rip
+
+/volume1/arm/               (appears as /home/arm/media in ARM pod, /arm-rips in Jellyfin pod)
+  completed/                Finished rips — review here before importing
+  raw/                      Temporary MakeMKV working files (cleaned up after rip)
+  music/                    CD rips in FLAC — copy to /volume1/music after review
 ```
 
-### Workflow
+### Workflows
 
+**DVD/Blu-ray rip → library:**
 ```
-New media (ARM rip, existing file, etc.)
+Insert disc → ARM auto-detects → MakeMKV rip
         │
         ▼
-     imports/
+  /volume1/arm/completed/<title>/
+        │
+        ▼
+  Preview in Jellyfin "Rip Queue" library (/arm-rips/completed)
+        │
+        ▼
+  Copy to /volume1/jellyfin/imports/
         │
         ▼
   Sonarr / Radarr manual import
-  (match → rename → Move into tv/ or movies/)
+  (match → rename → move into tv/ or movies/)
         │
         ▼
-  Bazarr detects new file via Sonarr/Radarr API
-  → fetches subtitles automatically
+  Bazarr fetches subtitles → Jellyfin streams
+```
+
+**CD rip → music library:**
+```
+Insert CD → ARM auto-detects → abcde rips to FLAC
         │
         ▼
-  Jellyfin scans library → available to stream
+  /volume1/arm/music/<Artist>/<Album>/
+        │
+        ▼
+  Review (play via Jellyfin "Rip Queue" or spot-check files)
+        │
+        ▼
+  Copy to /volume1/music/<Artist>/<Album>/
+        │
+        ▼
+  Jellyfin scans music library → available to stream
+```
+
+**Other media (existing files):**
+```
+Drop into /volume1/jellyfin/imports/
+        │
+        ▼
+  Sonarr / Radarr manual import
+        │
+        ▼
+  Bazarr fetches subtitles → Jellyfin streams
 ```
 
 ### Hardlinks
@@ -93,14 +135,18 @@ already supports hardlinks since all pods share the same NFS filesystem.
 
 ### Jellyfin (Dashboard → Libraries)
 
-| Library name | Content type | Path |
-|---|---|---|
-| TV Shows | TV Shows | `/media/tv` |
-| Movies | Movies | `/media/movies` |
-| Home Movies | Mixed Content (or Movies) | `/media/home-movies` |
+| Library name | Content type | Path | Notes |
+|---|---|---|---|
+| TV Shows | TV Shows | `/media/tv` | |
+| Movies | Movies | `/media/movies` | |
+| Home Movies | Mixed Content | `/media/home-movies` | Use Mixed Content to skip TMDB matching |
+| Music | Music | `/music` | NAS `/volume1/music` — FLAC rips from ARM |
+| Rip Queue | Mixed Content | `/arm-rips/completed` | Restrict to admin only — review before importing |
 
-> ℹ️ Use **Mixed Content** or **Home Videos** for home movies to prevent Jellyfin from
-> attempting to match them against external metadata databases (TMDB, etc.).
+> ℹ️ The **Rip Queue** library is for previewing ARM rips before importing into the main
+> library. Restrict access to admin only via **Administration → Users → [user] → Library
+> Access**. Once a rip is imported into TV Shows or Movies, it will disappear from Rip Queue
+> on the next scan (the file will have been moved).
 
 ### Bazarr (Settings → Sonarr / Radarr)
 
@@ -110,6 +156,32 @@ It does not require separate path configuration — it reads file locations from
 ---
 
 ## Workflows
+
+### Ripping a DVD or Blu-ray
+
+1. Insert disc into hl-07's optical drive
+2. ARM auto-detects and starts a job — check `https://arm.fiddlestick.org` for status
+3. There is a **60-second manual override window** at the start — use this to correct the
+   disc type or title if ARM misidentified it
+4. MakeMKV rips all titles above 10 minutes; the main feature is identified automatically
+5. Output lands in `/volume1/arm/completed/<title>/` on the NAS
+6. Open the **Rip Queue** library in Jellyfin to preview the rip before importing
+7. Once satisfied, copy the MKV to `/volume1/jellyfin/imports/` and use Sonarr/Radarr
+   manual import (see workflows below)
+
+> See [arm-runbook.md](arm-runbook.md) for full ARM deployment and troubleshooting details.
+
+### Ripping a CD
+
+1. Insert CD into hl-07's optical drive
+2. ARM auto-detects and starts a job — abcde looks up track info via MusicBrainz
+3. Output lands in `/volume1/arm/music/<Artist>/<Album>/` as FLAC files with cover art
+4. Review the rip, then copy the album folder to `/volume1/music/<Artist>/` on the NAS
+5. Trigger a Jellyfin music library scan: **Dashboard → Libraries → Scan All Libraries**
+6. In the Sonos app: **Settings → System → Music Library → Update Music Index Now** — Sonos does not pick up new files automatically
+
+> Note: ARM's mount-failure warning for audio CDs is expected and harmless — audio CDs
+> have no filesystem to mount. abcde reads them directly via cdparanoia.
 
 ### Manual Import — TV Shows
 
@@ -279,6 +351,51 @@ kubectl delete job -n arr filebot-rename
 
 After FileBot renames the files, use Sonarr/Radarr **Manual Import** to bring them into the
 managed library (see the Manual Import workflows above).
+
+### Replacing Existing Media with a New Rip
+
+Use this when you have a better rip (higher quality, fixed audio, etc.) and want to swap it
+out for what's already in the library.
+
+**TV Shows**
+
+1. Copy the new MKV to `/volume1/jellyfin/imports/`
+2. In Sonarr: **Wanted → Manual Import**, browse to `/media/imports/`
+3. Match the file to the correct episode — Sonarr will show it already has a file
+4. Set **Import Mode** to **Override / Replace** (dropdown next to the match)
+5. Click **Import** — Sonarr replaces the old file with the new one using the same filename
+
+Because Sonarr controls the rename, the path in `/media/tv/` stays the same. Jellyfin's DB
+record remains valid — no DB surgery needed. A library scan will pick up the new file.
+
+**Movies**
+
+Same process via Radarr:
+
+1. Copy the new MKV to `/volume1/jellyfin/imports/`
+2. In Radarr: find the movie, click **Manual Import**
+3. Browse to `/media/imports/`, match the file
+4. Set **Import Mode** to **Override / Replace**
+5. Click **Import** — Radarr replaces the file in `/media/movies/`
+
+**Home Movies**
+
+No arr involvement — overwrite directly on the NAS:
+
+1. Replace the file at `/volume1/jellyfin/home-movies/` with the new version, keeping the same filename
+2. Trigger a Jellyfin library scan: **Dashboard → Libraries → Scan All Libraries**
+
+If you change the filename, Jellyfin will treat it as a new item and the old entry will show
+as missing — delete the old entry manually via the Jellyfin UI before scanning.
+
+**Music**
+
+1. Replace the file(s) at `/volume1/music/<Artist>/<Album>/`, keeping the same filenames
+2. Trigger a Jellyfin music library scan
+
+> ⚠️ For all arr-managed media (TV and movies): do not overwrite or delete files directly on
+> the NAS without going through Sonarr/Radarr. Manual NAS edits leave arr with a stale record
+> and can cause Jellyfin DB path mismatches that require [manual DB surgery](#files-not-appearing-in-jellyfin-after-import).
 
 ### Adding Home Movies
 
