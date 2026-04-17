@@ -1,6 +1,6 @@
 # Immich Runbook
 
-Immich is the homelab photo library. It provides photo/video storage, sharing, and ML-powered search and face recognition. Authentication is via Authentik OIDC — family members log in with their lldap credentials.
+Immich is the homelab photo library. It provides photo/video storage, sharing, and ML-powered search and face recognition. Authentication is via Authentik OIDC — navigating to the URL redirects straight to Authentik with no login page shown.
 
 ## Architecture
 
@@ -34,11 +34,13 @@ The config secret must use `configurationKind: Secret` in the Helm values (not t
 
 On a fresh install, Immich shows a **Getting Started** wizard before showing the login page. You must complete this to create the first local admin account. After that, the normal login page appears with the **Login with Authentik** button.
 
-The local admin account is separate from lldap users — keep the credentials somewhere safe.
+The local admin account is a break-glass fallback — keep the credentials in 1Password.
 
 ### Subsequent users
 
-Family members log in via **Login with Authentik** using their lldap username and password. With `autoRegister: true` in the config, their Immich account is created automatically on first login.
+Family members are redirected straight to Authentik on arrival (`autoLaunch: true` in the
+config). With `autoRegister: true`, their Immich account is created automatically on first
+login using their Authentik credentials.
 
 ## Authentik OAuth2 Provider
 
@@ -52,7 +54,7 @@ To find the client ID and secret: **Applications → Providers → Immich** in t
 
 ## Troubleshooting
 
-### No "Login with Authentik" button
+### No auto-redirect to Authentik (login page shown instead)
 
 Check config is mounted:
 ```bash

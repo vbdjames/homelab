@@ -113,9 +113,33 @@ groups, set a password via the Set Password button.
 
 ---
 
+## LDAP Outpost
+
+An LDAP outpost is deployed for apps that can't use OIDC (currently Jellyfin; Calibre-Web planned).
+Authentik manages the outpost pod directly via its Kubernetes integration.
+
+**In-cluster LDAP endpoint:** `ak-outpost-ldap-outpost.authentik.svc.cluster.local:389`  
+**Base DN:** `DC=ldap,DC=goauthentik,DC=io`  
+**Users OU:** `ou=users,DC=ldap,DC=goauthentik,DC=io`  
+**Groups OU:** `ou=groups,DC=ldap,DC=goauthentik,DC=io`  
+**User DN format:** `cn=<username>,ou=users,DC=ldap,DC=goauthentik,DC=io`
+
+The outpost is configured with:
+- **Provider:** `ldap` (Cached binding, Direct querying, default-authentication-flow)
+- **Application:** `LDAP` — policy-bound to `family` group only
+- **Integration:** Local Kubernetes Cluster (Authentik manages the pod)
+
+To check outpost health:
+```bash
+kubectl -n authentik get pods | grep ldap
+kubectl -n authentik logs ak-outpost-ldap-outpost-<pod-id> --tail=30
+```
+
+---
+
 ## Immich OIDC Provider
 
-After lldap sync is confirmed, create an OAuth2/OIDC provider for Immich:
+Create an OAuth2/OIDC provider for Immich:
 
 1. Go to **Applications → Providers → Create** → choose **OAuth2/OpenID Provider**
 2. Fill in:

@@ -120,6 +120,8 @@ spec:
               value: "0"
             - name: USERMAP_GID
               value: "0"
+            - name: PAPERLESS_DISABLE_REGULAR_LOGIN
+              value: "true"
             - name: PAPERLESS_APPS
               value: allauth.socialaccount.providers.openid_connect
             - name: PAPERLESS_ACCOUNT_EMAIL_VERIFICATION

@@ -11,8 +11,8 @@
 |-----|-------------|-------|--------|
 | Immich | Authentik OIDC | family | ✅ Done |
 | Nextcloud | Authentik OIDC | family | ✅ Done |
-| Jellyfin | Authentik OIDC (SSO plugin) | family | Planned |
-| Paperless | Authentik OIDC | family | Planned |
+| Jellyfin | Authentik LDAP outpost | family | ✅ Done |
+| Paperless | Authentik OIDC | family | ✅ Done |
 | Calibre-Web | Authentik LDAP outpost | family | Planned |
 | Grafana | Authentik OIDC | admins | Planned |
 | ArgoCD | Authentik OIDC | admins | Planned |
@@ -76,24 +76,27 @@
 
 Bring remaining family apps onto Authentik so MJ (and future users) get per-user accounts.
 
-### Paperless
-Native OIDC support (v1.10+, currently running v2.13). Auto-provisions users on first login.
+### Paperless ✅
+Native OIDC support via django-allauth. Auto-provisions users on first login.
+`PAPERLESS_DISABLE_REGULAR_LOGIN=true` skips the login method selector and goes
+straight to Authentik.
 
-- [ ] Create Authentik OIDC provider + application for Paperless
-- [ ] Add OIDC env vars to Paperless deployment
-- [ ] Test login and auto-provisioning
+- [x] Create Authentik OIDC provider + application for Paperless
+- [x] Add OIDC env vars to Paperless deployment
+- [x] Test login and auto-provisioning
 - [ ] Decide on document sharing model (shared library vs per-user)
 
-### Jellyfin
-No native OIDC — requires the community `jellyfin-plugin-sso` plugin. Plugin maps OIDC
-logins to Jellyfin user accounts and can auto-create them. Needed so MJ gets her own
-watchlist, continue-watching, and library access controls.
+### Jellyfin ✅
+No native OIDC. Using Authentik LDAP outpost instead — users log in with their Authentik
+credentials directly. Works on all clients including TV apps (Apple TV, Android TV, etc.)
+where browser-based OAuth redirects are not possible.
 
-- [ ] Install jellyfin-plugin-sso into Jellyfin
-- [ ] Create Authentik OIDC provider + application for Jellyfin
-- [ ] Configure plugin with Authentik details
-- [ ] Test Doug and MJ login
-- [ ] Configure per-user library access (e.g. restrict Rip Queue to Doug only)
+- [x] Create Authentik LDAP provider + application (family group binding)
+- [x] Deploy Authentik LDAP outpost (managed by Kubernetes integration)
+- [x] Install LDAP-Auth plugin in Jellyfin
+- [x] Configure LDAP-Auth plugin pointing at outpost
+- [x] Test Doug and MJ login
+- [x] Configure per-user library access (Rip Queue restricted to Doug)
 
 ### Calibre-Web
 No OIDC support, but native LDAP authentication is supported. Point it at Authentik's LDAP
@@ -102,8 +105,8 @@ outpost — users log in with their Authentik credentials directly, no double lo
 Note: LDAP does not auto-provision users. Doug and MJ must be imported via the
 "Import LDAP Users" button in Calibre-Web admin after LDAP is configured.
 
-- [ ] Deploy Authentik LDAP outpost (shared with any other LDAP-dependent apps)
-- [ ] Create LDAP provider + application in Authentik
+- [x] Deploy Authentik LDAP outpost (shared with Jellyfin — already live)
+- [x] Create LDAP provider + application in Authentik
 - [ ] Configure Calibre-Web LDAP: point at Authentik outpost, set bind DN and user filter
 - [ ] Import LDAP users (Doug + MJ) in Calibre-Web admin
 - [ ] Test login with Authentik credentials
@@ -164,3 +167,7 @@ sees, which Nextcloud folders are shared) are managed inside each app, not in Au
 
 **Forward Auth:** Not implemented — all admin-only apps are Tailscale-gated, which is
 sufficient. Revisit if any services are ever exposed publicly.
+
+**TODO — Authentik app portal icons:** Once all apps are configured, add icons to each
+Authentik Application via Edit → Icon. Use the walkxcode CDN:
+`https://cdn.jsdelivr.net/gh/walkxcode/dashboard-icons/png/<app-name>.png`
