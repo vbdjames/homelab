@@ -78,6 +78,34 @@ data:
 
   services.yaml: |
     - Home:
+        - Jellyfin:
+            href: https://jellyfin.fiddlestick.org
+            description: Media server
+            icon: jellyfin.png
+            widget:
+              type: jellyfin
+              url: http://jellyfin.jellyfin.svc.cluster.local:8096
+              key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
+              enableBlocks: true
+              version: 2
+        - Immich:
+            href: https://immich.fiddlestick.org
+            description: Photo library
+            icon: immich.png
+            widget:
+              type: immich
+              url: http://immich-server.immich.svc.cluster.local:2283
+              key: "{{HOMEPAGE_VAR_IMMICH_API_KEY}}"
+              version: 2
+        - Nextcloud:
+            href: https://nextcloud.fiddlestick.org
+            description: File sync and sharing
+            icon: nextcloud.png
+            widget:
+              type: nextcloud
+              url: http://nextcloud.nextcloud.svc.cluster.local:8080
+              username: "{{HOMEPAGE_VAR_NEXTCLOUD_USERNAME}}"
+              password: "{{HOMEPAGE_VAR_NEXTCLOUD_PASSWORD}}"
         - Paperless:
             href: https://paperless.fiddlestick.org
             description: Document management
@@ -95,20 +123,6 @@ data:
               url: http://calibre-web.calibre-web.svc.cluster.local:8083
               username: "{{HOMEPAGE_VAR_CALIBRE_USERNAME}}"
               password: "{{HOMEPAGE_VAR_CALIBRE_PASSWORD}}"
-        - Wallabag:
-            href: https://wallabag.fiddlestick.org
-            description: Read-it-later
-            icon: wallabag.png
-        - Jellyfin:
-            href: https://jellyfin.fiddlestick.org
-            description: Media server
-            icon: jellyfin.png
-            widget:
-              type: jellyfin
-              url: http://jellyfin.jellyfin.svc.cluster.local:8096
-              key: "{{HOMEPAGE_VAR_JELLYFIN_API_KEY}}"
-              enableBlocks: true
-              version: 2
 
     - Infrastructure:
         - Proxmox:
@@ -140,6 +154,14 @@ data:
               username: "{{HOMEPAGE_VAR_NAS_USERNAME}}"
               password: "{{HOMEPAGE_VAR_NAS_PASSWORD}}"
               volume: volume_1
+        - Authentik:
+            href: https://authentik.fiddlestick.org
+            description: Identity provider
+            icon: authentik.png
+            widget:
+              type: authentik
+              url: http://authentik-server.authentik.svc.cluster.local:80
+              key: "{{HOMEPAGE_VAR_AUTHENTIK_TOKEN}}"
         - Grafana:
             href: https://grafana.fiddlestick.org
             description: Metrics and dashboards
@@ -182,6 +204,10 @@ data:
               type: bazarr
               url: http://bazarr.arr.svc.cluster.local:6767
               key: "{{HOMEPAGE_VAR_BAZARR_API_KEY}}"
+        - ARM:
+            href: https://arm.fiddlestick.org
+            description: Disc ripping
+            icon: automatic-ripping-machine.png
 
   bookmarks.yaml: |
     []
@@ -273,6 +299,26 @@ spec:
                 secretKeyRef:
                   name: homepage-calibre
                   key: password
+            - name: HOMEPAGE_VAR_IMMICH_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-immich
+                  key: apikey
+            - name: HOMEPAGE_VAR_NEXTCLOUD_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-nextcloud
+                  key: username
+            - name: HOMEPAGE_VAR_NEXTCLOUD_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-nextcloud
+                  key: password
+            - name: HOMEPAGE_VAR_AUTHENTIK_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: homepage-authentik
+                  key: token
             - name: HOMEPAGE_VAR_JELLYFIN_API_KEY
               valueFrom:
                 secretKeyRef:

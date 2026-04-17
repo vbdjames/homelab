@@ -1,0 +1,15 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: homepage-immich
+  namespace: homepage
+spec:
+  encryptedData:
+    apikey: AgCvVQPckHiQ3jx0rD7f/cRPPZsyRL1lWMC9CGONM1fQYSvyKQmX2nwrp8fUkqgGPZPyZ7dq0/k2B6KBrCIIHckxafwR+hrgTHoCXWLz05eVVk9/qvGjtN/8VW5oN9NVDcSOV7xTi4OmR3uo2TwFiqWgeNIGfU5cL9JgNIKpmqLQIxa2gN2ick1vWsb04S5EiB6I1ipdZLc676qwehGwtyfwFv1SrzUv0RYeHK7wpQb0KhLksVnNz0K6H6X7hhE83yO+gSja5twD1S6IBIEFQm5zpW1otT7Y2cvQW0qZMbG7xoE6GVI7mcPTfMN9UEu47y2a2VidT/WI3t+9CjpRY9eEclMXXfm5HImTG8SVsBX8U2JNHwp6n1QYHHHBCXGuVWSRSiHPOi4dXgx+tvAEGd0A4+NcpTTJ51sGjSjhdnWenOAoDKztWC4W4WlcKf0+2F3gNWm2VYJqJT2hyBPc+8uqvlDuVTxHyhbRv2toldxzT60zw1NDUpFCusqecyCCpr27MLlZsdlUCNE52tIKMrnBT0mdLUTPCFYUkBgEradu8m6JFMFx++GbtOBeWZsYP7ZvAwWLdvwXfqzwnOJz9DyKtKRdvHYff/NDo9wgAh62Q1jlix6M2ljqFZ1Yxv0SvLcZP+lLlhPQcqG51aYeXYw7WkKg66DBKPXdIzuKjY/tZ8KL9aUYzgnRvZuIGg1I8bOhLW/F2EyNTgaMT8tJHK23JKBzVCphjqLDzNYvoNYPAxlS9EH69G+hwYU=
+  template:
+    metadata:
+      creationTimestamp: null
+      name: homepage-immich
+      namespace: homepage

@@ -1,0 +1,15 @@
+---
+apiVersion: bitnami.com/v1alpha1
+kind: SealedSecret
+metadata:
+  creationTimestamp: null
+  name: homepage-authentik
+  namespace: homepage
+spec:
+  encryptedData:
+    token: AgADk76muWaDqGYGgkaXWJnu4CoIrBH0/huTLcLCj+3Whkj1GmiooJZqJX2CcUC4jSjvp9dPT9PQKzBMLmFn2gjnLPojNlSS/bGrTEYmvf4E8kNI1orMGOXopwZenG8vVWleVrIQPcSi1vaFrYmGreVDuSBAtX6YXmOAAXQrizt4gNiJ84+/c9goOs7gpbTSRd2RbLdlyYb439JwGvsg/FH5q81d62cXhVGX+uJJmk07RxsdmovRZLz3pBUvg+DdQQzc2grjg5ZgjEeu+tg07tdm6pxCWEH+vyMfmnTJcaGhryMUcJ5aGzR6zxOSd92Tn8hFB44GfU4SBLKdRracN/pAhC83+2VUqvQjOS9ZK9eS1WzUFslGRP+v+4/pj++SHsWuCYcUl+aNB8qvd9Gw66PP+KaIPLGhnO0BVMrmf5TTlxV6qcuALaTkzYrA8sjz0VT3OLh6TInk8+J1ugEmEG1mdCVnz1jWo4a7lW63dBAQHOYtfCc17YyOhx6TpTM6CmMB7NnI1Phk22XhPtFS48ph1jQCBCoDmqjFH7z6THOwcnuHP1AcdlIqhBYd0O2hjRzSP7U3QeP26eL/qekEmEfU5GAPUuCqR/tub6x6u19FtuwII/BP4NJDbMKx9sip5x9IVC4Gi0jRKhltHY0XNtj08368kL45UHAvbd8N9UxIJMQ7pgOMAOchSCUn0BlL8kZxbNEITTKnJ2UJt69MjwNPs0NYR+KcZ0mhVK9782KT8GVMpv7b6ZhYMrVvBclFthxxLVaiLY6vOIUCM88=
+  template:
+    metadata:
+      creationTimestamp: null
+      name: homepage-authentik
+      namespace: homepage
