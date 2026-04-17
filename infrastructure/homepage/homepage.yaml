@@ -207,7 +207,7 @@ data:
         - ARM:
             href: https://arm.fiddlestick.org
             description: Disc ripping
-            icon: automatic-ripping-machine.png
+            icon: https://raw.githubusercontent.com/automatic-ripping-machine/automatic-ripping-machine/main/arm/ui/static/img/android-chrome-512x512.png
 
   bookmarks.yaml: |
     []
