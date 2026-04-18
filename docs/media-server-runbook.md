@@ -300,57 +300,47 @@ After moving extras, trigger a Jellyfin library scan: Dashboard → Libraries �
 
 ### Batch Renaming with FileBot
 
-Use FileBot when you have a directory of files with inconsistent or unrecognizable names that
-need to be renamed into the `Name (Year)/Name (Year).ext` format before Radarr/Sonarr can
-import them. Common scenarios: Emby/Plex library migrations, bulk ARM rips, pre-organized
-collections from another system.
+Use FileBot when you have files with inconsistent or unrecognizable names that need to be
+renamed before Radarr/Sonarr can import them. Common scenarios: ARM rips, library migrations,
+pre-organized collections from another system.
 
-The FileBot job manifest lives at `docs/filebot-job.yaml`. It is **not** in an ArgoCD-managed
-path — apply and delete it manually each time.
+**Drop zone (on the NAS):**
+
+| Media type | NAS path | 
+|---|---|
+| Movies | `/volume1/jellyfin/imports/movies` |
+| TV shows | `/volume1/jellyfin/imports/tv` |
+
+Copy files to the appropriate folder, then run the script from the repo root.
 
 **Step 1 — Preview (dry run)**
 
-Edit the job to point at your source directory (currently set to `/media/fromemby`), confirm
-`--action test` is set, then apply:
-
 ```bash
-# Edit source path in the manifest if needed, then:
-kubectl apply -f infrastructure/arr/filebot-job.yaml
-kubectl logs -n arr job/filebot-rename --follow
+./scripts/filebot.sh movies test   # preview movie renames
+./scripts/filebot.sh tv test       # preview TV show renames
 ```
 
-Review the output — FileBot prints each rename it would perform. Verify the matches look
-correct before proceeding.
+FileBot prints each rename it would perform. Verify the matches look correct before proceeding.
 
-**Step 2 — Run for real**
-
-Change `--action test` to `--action move` in the manifest, delete the completed job, and
-re-apply:
+**Step 2 — Rename in place**
 
 ```bash
-kubectl delete job -n arr filebot-rename
-# Edit manifest: --action test → --action move
-kubectl apply -f infrastructure/arr/filebot-job.yaml
-kubectl logs -n arr job/filebot-rename --follow
+./scripts/filebot.sh movies rename
+./scripts/filebot.sh tv rename
 ```
 
-**Step 3 — Clean up**
+The script prompts for confirmation before running. Files are renamed in place within
+the imports folder — they are not moved to the library yet.
 
-```bash
-kubectl delete job -n arr filebot-rename
-```
+**Step 3 — Manual import**
 
-**Adapting for different use cases**
+Point Sonarr/Radarr **Manual Import** at the imports folder
+(`/volume1/jellyfin/imports/movies` or `/volume1/jellyfin/imports/tv`).
+Sonarr/Radarr will move the renamed files into the managed library.
+The job cleans itself up automatically.
 
-| Need | Change |
-|---|---|
-| Different source directory | Edit the path argument (`/media/fromemby` → your path) |
-| TV shows instead of movies | Change `--db TheMovieDB` to `--db TheTVDB` and update `--format` |
-| Movies format | Current format `{n} ({y})/{n} ({y})` → creates `Name (Year)/Name (Year).ext` |
-| TV format | Use `{n}/Season {s}/{n} - {s00e00} - {t}` for Sonarr-compatible naming |
-
-After FileBot renames the files, use Sonarr/Radarr **Manual Import** to bring them into the
-managed library (see the Manual Import workflows above).
+> **Note:** FileBot is for **new** content only. To replace an existing file with a
+> better rip, use the Radarr/Sonarr upgrade workflow instead (see below).
 
 ### Replacing Existing Media with a New Rip
 
