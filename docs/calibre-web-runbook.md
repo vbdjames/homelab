@@ -23,6 +23,57 @@ the Calibre library.
 
 ---
 
+## Authentication — Authentik LDAP
+
+Calibre-Web uses the Authentik LDAP outpost for authentication. Users log in with their
+Authentik username and password. Accounts are auto-created on first login.
+
+### LDAP Configuration (Admin → Configuration → Feature Configuration)
+
+| Setting | Value |
+|---|---|
+| LDAP Server Host Name | `ak-outpost-ldap-outpost.authentik.svc.cluster.local` |
+| LDAP Server Port | `389` |
+| LDAP Encryption | None |
+| LDAP Authentication | Simple |
+| LDAP Distinguished Name (DN) | `ou=users,DC=ldap,DC=goauthentik,DC=io` |
+| LDAP User Object Filter | `(cn=%s)` |
+| LDAP Administrator Username | `cn=doug,ou=users,DC=ldap,DC=goauthentik,DC=io` |
+| LDAP Administrator Password | Doug's Authentik password |
+| LDAP Server is OpenLDAP? | Yes |
+| Auto-create users from LDAP | checked |
+| LDAP Group Object Filter | `(cn=%s)` |
+| LDAP Group Name | `family` |
+| LDAP Group Members Field | `member` |
+
+### User Roles
+
+Calibre-Web stores permissions as a bitmask in its SQLite database (`/config/app.db`).
+New LDAP users are created with role `0` (no permissions) and must be configured after
+first login.
+
+| User | Role value | Permissions |
+|---|---|---|
+| doug | `479` | Full admin |
+| mj | set via UI | Download, edit shelves |
+
+**To grant Doug admin after a fresh install or database reset:**
+```bash
+kubectl -n calibre-web exec deployment/calibre-web -- sqlite3 /config/app.db \
+  "UPDATE user SET role=479 WHERE name='doug';"
+```
+
+### Adding a New Family User
+
+1. Have the user log in with their Authentik credentials — account is auto-created
+2. Go to **Admin → Users → \<username\>** and set appropriate permissions:
+   - **Download books:** yes
+   - **Edit public shelves:** yes
+   - **Send to device:** yes if they have an e-reader
+   - Everything else: no
+
+---
+
 ## Email / Send to Device
 
 Calibre-Web can send books directly to e-readers via email.

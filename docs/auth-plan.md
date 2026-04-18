@@ -13,7 +13,7 @@
 | Nextcloud | Authentik OIDC | family | ✅ Done |
 | Jellyfin | Authentik LDAP outpost | family | ✅ Done |
 | Paperless | Authentik OIDC | family | ✅ Done |
-| Calibre-Web | Authentik LDAP outpost | family | Planned |
+| Calibre-Web | Authentik LDAP outpost | family | ✅ Done |
 | Grafana | Authentik OIDC | admins | Planned |
 | ArgoCD | Authentik OIDC | admins | Planned |
 | Homepage | None (Tailscale-only) | admins | No action needed |
@@ -107,10 +107,10 @@ Note: LDAP does not auto-provision users. Doug and MJ must be imported via the
 
 - [x] Deploy Authentik LDAP outpost (shared with Jellyfin — already live)
 - [x] Create LDAP provider + application in Authentik
-- [ ] Configure Calibre-Web LDAP: point at Authentik outpost, set bind DN and user filter
-- [ ] Import LDAP users (Doug + MJ) in Calibre-Web admin
-- [ ] Test login with Authentik credentials
-- [ ] Remove existing local admin account or demote it to break-glass
+- [x] Configure Calibre-Web LDAP: point at Authentik outpost, set bind DN and user filter
+- [x] Doug and MJ auto-created on first login (Import LDAP Users button not needed)
+- [x] Test login with Authentik credentials
+- [x] Grant Doug admin via sqlite (LDAP users created with role=0); demote local admin
 
 ---
 
