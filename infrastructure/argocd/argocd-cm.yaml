@@ -11,7 +11,7 @@ data:
   accounts.homepage: apiKey
   oidc.config: |
     name: Authentik
-    issuer: https://authentik.fiddlestick.org/application/o/argocd/
+    issuer: http://authentik-server.authentik.svc.cluster.local/application/o/argocd/
     clientID: jKU5IFmMuPhgdKQkKMCHiLkSrT2B182qgNI2isjC
     clientSecret: $argocd-oidc:clientSecret
     requestedScopes:

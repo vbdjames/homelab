@@ -14,8 +14,8 @@
 | Jellyfin | Authentik LDAP outpost | family | ✅ Done |
 | Paperless | Authentik OIDC | family | ✅ Done |
 | Calibre-Web | Authentik LDAP outpost | family | ✅ Done |
-| Grafana | Authentik OIDC | admins | Planned |
-| ArgoCD | Authentik OIDC | admins | Planned |
+| Grafana | Authentik OIDC | admins | ✅ Done |
+| ArgoCD | Authentik OIDC | admins | ✅ Done |
 | Homepage | None (Tailscale-only) | admins | No action needed |
 | ARM | None (Tailscale-only) | admins | No action needed |
 | Radarr | None (Tailscale-only) | admins | No action needed |
@@ -119,22 +119,22 @@ Note: LDAP does not auto-provision users. Doug and MJ must be imported via the
 Replace local admin accounts with Authentik OIDC. Not a security requirement (Tailscale
 already gates access), but eliminates shared `admin` accounts and gives proper audit trails.
 
-### Grafana
+### Grafana ✅
 Native OIDC/OAuth2 support. Can map Authentik groups to Grafana roles (admins → GrafanaAdmin).
 
-- [ ] Create Authentik OIDC provider + application for Grafana
-- [ ] Configure Grafana OIDC via Helm values
-- [ ] Map `admins` group → Grafana Admin role
-- [ ] Test login
+- [x] Create Authentik OIDC provider + application for Grafana
+- [x] Configure Grafana OIDC via Helm values
+- [x] Map `admins` group → Grafana Admin role
+- [x] Test login
 - [ ] Optionally disable local admin account
 
-### ArgoCD
+### ArgoCD ✅
 Native OIDC support. Can map Authentik groups to ArgoCD RBAC roles.
 
-- [ ] Create Authentik OIDC provider + application for ArgoCD
-- [ ] Configure ArgoCD OIDC via Helm values
-- [ ] Map `admins` group → ArgoCD admin role
-- [ ] Test login
+- [x] Create Authentik OIDC provider + application for ArgoCD
+- [x] Configure ArgoCD OIDC via argocd-cm ConfigMap
+- [x] Map `admins` group → ArgoCD admin role (policy.default: role:admin)
+- [x] Test login
 - [ ] Optionally disable local admin account
 
 ---
@@ -143,11 +143,11 @@ Native OIDC support. Can map Authentik groups to ArgoCD RBAC roles.
 
 Once Nextcloud is on OIDC and no app references lldap, remove it entirely.
 
-- [ ] Confirm no app is connecting to `ldap://lldap.lldap.svc.cluster.local:3890`
-- [ ] Remove `apps/lldap.yaml` ArgoCD Application
-- [ ] Remove `infrastructure/lldap/` directory
-- [ ] Remove lldap sealed secrets
-- [ ] Remove lldap ingress / DNS entry if applicable
+- [x] Confirm no app is connecting to `ldap://lldap.lldap.svc.cluster.local:3890`
+- [x] Remove `apps/lldap.yaml` ArgoCD Application
+- [x] Remove `infrastructure/lldap/` directory
+- [x] Remove lldap sealed secrets
+- [ ] Remove lldap DNS entry if applicable
 - [ ] Archive or remove `lldap-runbook.md`
 
 ---
