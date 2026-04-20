@@ -53,8 +53,8 @@ Located at **Dashboard → Plugins → LDAP-Auth**:
 | LDAP Search Attributes | `cn` |
 | LDAP UID Attribute | `cn` |
 | LDAP Username Attribute | `cn` |
-| Bind User | `cn=doug,ou=users,DC=ldap,DC=goauthentik,DC=io` |
-| Bind Password | Doug's Authentik password |
+| Bind User | `cn=ldap-service,ou=serviceaccounts,DC=ldap,DC=goauthentik,DC=io` |
+| Bind Password | ldap-service Authentik password (1Password) |
 | Enable user creation | checked |
 | Admin Filter | `(memberOf=cn=admins,ou=groups,DC=ldap,DC=goauthentik,DC=io)` |
 
@@ -75,8 +75,6 @@ Located at **Dashboard → Plugins → LDAP-Auth**:
 
 | Plugin | Version | Purpose |
 |---|---|---|
-| LDAP-Auth | 22.0.0.0 | Authentik LDAP authentication |
-
 | LDAP-Auth | 22.0.0.0 | Authentik LDAP authentication |
 
 ---

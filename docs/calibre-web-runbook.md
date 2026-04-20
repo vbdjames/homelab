@@ -38,8 +38,8 @@ Authentik username and password. Accounts are auto-created on first login.
 | LDAP Authentication | Simple |
 | LDAP Distinguished Name (DN) | `ou=users,DC=ldap,DC=goauthentik,DC=io` |
 | LDAP User Object Filter | `(cn=%s)` |
-| LDAP Administrator Username | `cn=doug,ou=users,DC=ldap,DC=goauthentik,DC=io` |
-| LDAP Administrator Password | Doug's Authentik password |
+| LDAP Administrator Username | `cn=ldap-service,ou=serviceaccounts,DC=ldap,DC=goauthentik,DC=io` |
+| LDAP Administrator Password | ldap-service Authentik password (1Password) |
 | LDAP Server is OpenLDAP? | Yes |
 | Auto-create users from LDAP | checked |
 | LDAP Group Object Filter | `(cn=%s)` |

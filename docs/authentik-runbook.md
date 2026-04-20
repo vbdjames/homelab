@@ -1,6 +1,6 @@
 # Authentik Runbook
 
-Authentik is the homelab identity provider (IdP). It provides OAuth2/OIDC single sign-on across services. It syncs users from lldap (the LDAP user directory) and issues tokens to applications like Immich.
+Authentik is the homelab identity provider (IdP). It provides OAuth2/OIDC single sign-on and LDAP authentication across services.
 
 ## Architecture
 
@@ -107,6 +107,10 @@ Users are managed directly in Authentik at **Directory → Users**. lldap is no 
 - `akadmin` — break-glass account; keep password in 1Password, do not use day-to-day
 - `doug` — primary admin; member of `authentik Admins`, `admins`, and `family`
 - `mj` — family member; member of `family`
+- `ldap-service` — LDAP bind account for Jellyfin and Calibre-Web; path `serviceaccounts`;
+  member of `authentik Admins` (required for LDAP user search — see note below)
+- `homepage` — Calibre-Web OPDS widget account for Homepage dashboard; path `serviceaccounts`;
+  member of `family` (bind-only — does not need `authentik Admins`)
 
 **Adding a new user:** Directory → Users → Create. Set path to `users`, assign to appropriate
 groups, set a password via the Set Password button.
@@ -115,19 +119,46 @@ groups, set a password via the Set Password button.
 
 ## LDAP Outpost
 
-An LDAP outpost is deployed for apps that can't use OIDC (currently Jellyfin; Calibre-Web planned).
+An LDAP outpost is deployed for apps that can't use OIDC (Jellyfin, Calibre-Web).
 Authentik manages the outpost pod directly via its Kubernetes integration.
 
 **In-cluster LDAP endpoint:** `ak-outpost-ldap-outpost.authentik.svc.cluster.local:389`  
 **Base DN:** `DC=ldap,DC=goauthentik,DC=io`  
 **Users OU:** `ou=users,DC=ldap,DC=goauthentik,DC=io`  
 **Groups OU:** `ou=groups,DC=ldap,DC=goauthentik,DC=io`  
-**User DN format:** `cn=<username>,ou=users,DC=ldap,DC=goauthentik,DC=io`
+**User DN format:** `cn=<username>,ou=users,DC=ldap,DC=goauthentik,DC=io`  
+**Service accounts DN format:** `cn=<username>,ou=serviceaccounts,DC=ldap,DC=goauthentik,DC=io`
 
 The outpost is configured with:
 - **Provider:** `ldap` (Cached binding, Direct querying, default-authentication-flow)
 - **Application:** `LDAP` — policy-bound to `family` group only
 - **Integration:** Local Kubernetes Cluster (Authentik manages the pod)
+
+### LDAP bind accounts
+
+Apps that use LDAP need a bind account to search the directory. The `ldap-service` account
+serves this role for all LDAP-connected apps.
+
+**Important:** The bind account must be a member of `authentik Admins` to search for other
+users. A regular Authentik user can only see themselves in LDAP — `authentik Admins`
+membership grants the superuser flag required for directory-wide search. The bind account's
+path (`serviceaccounts`) and group membership (`family`) do not affect search capability.
+
+**Note:** Accounts that only need to bind as themselves (e.g. for OPDS widget auth) only
+need `family` group membership — `authentik Admins` is not required.
+
+**Note:** When Calibre-Web is configured for LDAP, it authenticates *all* users via LDAP —
+including accounts created locally in the admin UI. Local password hashes are not used as
+a fallback. Any account used for OPDS/API access must therefore exist in Authentik.
+
+**Bind account DN:** `cn=ldap-service,ou=serviceaccounts,DC=ldap,DC=goauthentik,DC=io`  
+**Password:** stored in 1Password as `homelab — ldap-service`
+
+To restart the outpost (e.g. after config changes):
+```bash
+kubectl rollout restart deployment/ak-outpost-ldap-outpost -n authentik
+kubectl rollout status deployment/ak-outpost-ldap-outpost -n authentik
+```
 
 To check outpost health:
 ```bash
