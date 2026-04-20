@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-rbac-cm
+  namespace: argocd
+data:
+  # Everyone who authenticates via Authentik is an admin.
+  # Access is already gated by the Authentik application policy (admins group only).
+  policy.default: role:admin

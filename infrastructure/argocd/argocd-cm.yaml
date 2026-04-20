@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: argocd-cm
+  namespace: argocd
+  labels:
+    app.kubernetes.io/name: argocd-cm
+    app.kubernetes.io/part-of: argocd
+data:
+  url: https://argocd.fiddlestick.org
+  accounts.homepage: apiKey
+  oidc.config: |
+    name: Authentik
+    issuer: https://authentik.fiddlestick.org/application/o/argocd/
+    clientID: jKU5IFmMuPhgdKQkKMCHiLkSrT2B182qgNI2isjC
+    clientSecret: $argocd-oidc:clientSecret
+    requestedScopes:
+      - openid
+      - profile
+      - email
