@@ -75,15 +75,25 @@ spec:
             summary: "Node {{ $labels.instance }} memory usage is high"
             description: "Memory usage is above 90% (current: {{ $value | printf \"%.1f\" }}%)."
 
-        - alert: NodeDiskUsageHigh
+        - alert: NodeDiskUsageWarning
           expr: |
-            (1 - (node_filesystem_avail_bytes{mountpoint="/"} / node_filesystem_size_bytes{mountpoint="/"})) * 100 > 85
+            (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"})) * 100 > 60
           for: 10m
           labels:
             severity: warning
           annotations:
-            summary: "Node {{ $labels.instance }} disk usage is high"
-            description: "Root filesystem usage is above 85% (current: {{ $value | printf \"%.1f\" }}%)."
+            summary: "Node {{ $labels.instance }} disk usage above 60%"
+            description: "Root filesystem usage is {{ $value | printf \"%.1f\" }}% — trending toward GC threshold (70%)."
+
+        - alert: NodeDiskUsageCritical
+          expr: |
+            (1 - (node_filesystem_avail_bytes{mountpoint="/",fstype!~"tmpfs|overlay"} / node_filesystem_size_bytes{mountpoint="/",fstype!~"tmpfs|overlay"})) * 100 > 75
+          for: 5m
+          labels:
+            severity: critical
+          annotations:
+            summary: "Node {{ $labels.instance }} disk usage above 75%"
+            description: "Root filesystem usage is {{ $value | printf \"%.1f\" }}% — above GC high threshold, image cleanup may be needed."
 
     - name: persistent-volumes
       rules:

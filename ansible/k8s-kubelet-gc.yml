@@ -1,0 +1,38 @@
+---
+# Set kubelet image GC thresholds on all k8s nodes.
+#
+# The defaults (85% high / 80% low) are too permissive for the 27GB worker nodes
+# and allow image accumulation to push disk usage into the 70-80% range before
+# GC kicks in. This playbook sets tighter thresholds and does a rolling kubelet
+# restart (serial: 1) to avoid disrupting the cluster.
+#
+# Run from the ansible/ directory:
+#   ansible-playbook -i inventory/hosts.yml k8s-kubelet-gc.yml
+
+- name: Configure kubelet image GC thresholds
+  hosts: homelab
+  become: true
+  serial: 1
+
+  tasks:
+    - name: Set imageGCHighThresholdPercent in kubelet config
+      ansible.builtin.lineinfile:
+        path: /var/lib/kubelet/config.yaml
+        regexp: '^imageGCHighThresholdPercent:'
+        line: "imageGCHighThresholdPercent: {{ kubelet_image_gc_high_threshold }}"
+        insertafter: '^kind:'
+      notify: Restart kubelet
+
+    - name: Set imageGCLowThresholdPercent in kubelet config
+      ansible.builtin.lineinfile:
+        path: /var/lib/kubelet/config.yaml
+        regexp: '^imageGCLowThresholdPercent:'
+        line: "imageGCLowThresholdPercent: {{ kubelet_image_gc_low_threshold }}"
+        insertafter: '^imageGCHighThresholdPercent:'
+      notify: Restart kubelet
+
+  handlers:
+    - name: Restart kubelet
+      ansible.builtin.systemd:
+        name: kubelet
+        state: restarted

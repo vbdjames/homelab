@@ -22,3 +22,8 @@ k8s_nameservers:
 pod_network_cidr: "172.16.0.0/16"
 service_cidr: "172.17.0.0/16"
 
+# Kubelet image GC thresholds — tighter than defaults (85/80) to prevent disk pressure
+# on the 27GB worker nodes. GC kicks in at 70% and cleans down to 55%.
+kubelet_image_gc_high_threshold: 70
+kubelet_image_gc_low_threshold: 55
+
