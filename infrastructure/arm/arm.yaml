@@ -43,8 +43,6 @@ spec:
       labels:
         app: arm
     spec:
-      hostNetwork: true
-      dnsPolicy: ClusterFirstWithHostNet
       securityContext:
         fsGroup: 1000
       affinity:
