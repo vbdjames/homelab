@@ -21,6 +21,12 @@ to Authentik without seeing a login method selector.
 
 ---
 
+## Related
+
+- [Scanning Runbook](scanning-runbook.md) — scanning from the Epson FF-680W into Paperless
+
+---
+
 ## Key Files
 
 - `infrastructure/paperless/paperless.yaml` — PVCs, Deployment, Service, Ingress
