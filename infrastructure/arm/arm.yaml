@@ -43,6 +43,8 @@ spec:
       labels:
         app: arm
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       securityContext:
         fsGroup: 1000
       affinity:
@@ -81,6 +83,8 @@ spec:
               mountPath: /home/arm/media
             - name: sr0-mountpoint
               mountPath: /mnt/dev/sr0
+            - name: udev-run
+              mountPath: /run/udev
           resources:
             requests:
               memory: 256Mi
@@ -98,6 +102,9 @@ spec:
             claimName: arm-media
         - name: sr0-mountpoint
           emptyDir: {}
+        - name: udev-run
+          hostPath:
+            path: /run/udev
 ---
 apiVersion: v1
 kind: Service
