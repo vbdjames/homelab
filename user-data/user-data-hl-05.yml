@@ -35,6 +35,7 @@ autoinstall:
   storage:
     layout:
       name: lvm
+      sizing-policy: all
 
   packages:
     - python3
@@ -49,6 +50,8 @@ autoinstall:
         permissions: "0440"
 
   late-commands:
+    - lvextend -l +100%FREE /dev/ubuntu-vg/ubuntu-lv || true
+    - resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv || true
     - curtin in-target --target=/target -- systemctl enable ssh
 
   power_state:
