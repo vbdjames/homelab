@@ -1,8 +1,8 @@
 # Proxmox Runbook
 
 > **Status:** Active — Proxmox running, Tailscale subnet router active, Pi-hole handling DNS and DHCP
-> **Last updated:** 2026-04-02
-> **Hardware:** HP Desktop, Intel Core 2 Duo E8500, 16GB RAM, single onboard NIC
+> **Last updated:** 2026-05-04
+> **Hardware:** Apple Mac Mini (2011), Intel Core i5, 16GB RAM, single onboard NIC
 
 ---
 
@@ -14,7 +14,7 @@ that need to be available independently of the cluster (DNS, future pfSense, etc
 
 | Host | Role | IP |
 |---|---|---|
-| `pve-01` | Proxmox hypervisor | `192.168.1.160` |
+| `pve-01` | Proxmox hypervisor | `192.168.1.162` |
 | `pihole` | Pi-hole DNS (LXC) | `192.168.1.161` |
 
 ---
@@ -299,13 +299,89 @@ Proxmox UI is now accessible at `https://pve-01.fiddlestick.org:8006` with a val
 
 ---
 
+## Rename pve-02 → pve-01
+
+The current Proxmox host was provisioned as `pve-02` (192.168.1.162) when the original
+`pve-01` (192.168.1.160) was replaced. This section covers renaming it cleanly.
+
+**Why the previous attempt failed:** Proxmox stores LXC configs at
+`/etc/pve/nodes/<nodename>/lxc/`. When the node came up under the new name, it looked
+for configs under `/etc/pve/nodes/pve-01/lxc/` — found nothing — and Pi-hole didn't
+start.
+
+**Key constraint:** `/etc/pve` is managed by pmxcfs, which does not allow `cp` — you
+must use `mv` to move container configs.
+
+### Before you start
+
+Pi-hole handles DHCP, so there's no easy way to push a fallback DNS to devices ahead of
+time. The rename takes a few minutes — just pick a quiet time (weekend morning, not a
+workday). Manually set DNS to `1.1.1.1` on your phone and laptop before starting so you
+have working DNS on your own devices if anything goes wrong mid-rename.
+
+### Procedure
+
+```bash
+# 1. Check current state — see what node directories exist
+ls /etc/pve/nodes/
+
+# 2. Stop Pi-hole LXC cleanly (find the CT ID from pct list)
+pct list
+pct stop <containerid>
+
+# 3. Update hostname
+echo "pve-01" > /etc/hostname
+
+# Edit /etc/hosts — change pve-02 to pve-01 on the 127.x.x.x line
+nano /etc/hosts
+
+# 4. Move LXC configs to the new node name BEFORE rebooting
+mkdir -p /etc/pve/nodes/pve-01/lxc
+mkdir -p /etc/pve/nodes/pve-01/qemu-server
+mv /etc/pve/nodes/pve-02/lxc/* /etc/pve/nodes/pve-01/lxc/
+rmdir /etc/pve/nodes/pve-02
+
+# 5. Verify — pve-02 dir should be gone, pve-01 should have your container config
+ls /etc/pve/nodes/
+ls /etc/pve/nodes/pve-01/lxc/
+
+# 6. Reboot
+reboot
+```
+
+### After reboot
+
+```bash
+# Confirm hostname
+hostnamectl
+
+# Confirm Pi-hole LXC is visible
+pct list
+
+# Start Pi-hole
+pct start <containerid>
+
+# Confirm Pi-hole is resolving DNS
+nslookup argocd.fiddlestick.org 192.168.1.161
+```
+
+Once Pi-hole is confirmed healthy, remove the fallback DNS from the router.
+
+### After the rename — also update
+
+- Ansible inventory: `ansible/inventory/hosts.yml` — change `pve-01` IP from `192.168.1.160` to `192.168.1.162`
+- Ansible playbook: `ansible/proxmox-pihole.yml` — three hardcoded `node: pve-01` references are already correct once renamed
+- TLS cert: the acme.sh cert was issued for `pve-01.fiddlestick.org` — reissue it after the rename since the hostname now matches the domain
+
+---
+
 ## Checklist
 
 ### Proxmox
 - [x] ISO downloaded and USB prepared ✅
-- [x] Proxmox installed at `192.168.1.160` ✅
+- [x] Proxmox installed at `192.168.1.162` ✅
 - [x] Community repo configured, updates applied ✅
-- [x] Web UI accessible at `https://192.168.1.160:8006` ✅
+- [x] Web UI accessible at `https://192.168.1.162:8006` ✅
 
 ### Tailscale subnet router
 - [x] Tailscale installed on `pve-01` ✅

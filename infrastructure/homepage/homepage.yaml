@@ -131,7 +131,7 @@ data:
             icon: proxmox.png
             widget:
               type: proxmox
-              url: https://192.168.1.160:8006
+              url: https://192.168.1.162:8006
               username: "{{HOMEPAGE_VAR_PROXMOX_TOKEN}}"
               password: "{{HOMEPAGE_VAR_PROXMOX_SECRET}}"
               node: pve-01

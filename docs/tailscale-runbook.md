@@ -1,19 +1,22 @@
 # Tailscale Runbook
 
-> **Status:** Active — subnet router running on pve-01, full LAN accessible via tailnet
-> **Last updated:** 2026-04-04
+> **Status:** Active — redundant subnet routers on pve-01 and NAS; split DNS for fiddlestick.org via Pi-hole
+> **Last updated:** 2026-04-26
 
 ---
 
 ## Overview
 
-Tailscale provides remote access to all homelab services via a subnet router running on
-`pve-01`. The subnet router advertises `192.168.1.0/24` to the tailnet — any device on
-the tailnet can reach any LAN IP as if they were home.
+Tailscale provides remote access to all homelab services. Two subnet routers advertise
+`192.168.1.0/24` to the tailnet — Tailscale automatically fails over between them:
 
-Services are accessed via their `*.fiddlestick.org` names, which resolve to
-`192.168.1.201` (ingress-nginx) via Pi-hole on LAN and via public Cloudflare DNS on
-the tailnet. The same URL works everywhere.
+| Device | Role | IP |
+|--------|------|----|
+| `pve-01` | Primary subnet router | `192.168.1.162` |
+| `nas` | Secondary subnet router | `192.168.1.3` |
+
+Split DNS routes `*.fiddlestick.org` queries to Pi-hole (`192.168.1.161`) when on the
+tailnet — the same URLs work whether you're home or remote.
 
 **Why not the Tailscale Kubernetes operator:**
 The operator was evaluated but removed in favour of the subnet router approach.
@@ -22,10 +25,21 @@ router gives access to all services automatically with ACL-based access control.
 
 ---
 
-## Subnet Router Setup (pve-01)
+## Subnet Router Setup — Proxmox Host
 
-Tailscale is installed directly on the Proxmox host (`pve-01`), not in the cluster.
-This keeps it independent of the cluster — if the cluster is down, Tailscale still works.
+Tailscale is installed directly on the Proxmox host, not in the cluster. This keeps
+it independent of the cluster — if the cluster is down, Tailscale still works.
+
+### Prerequisites — IP forwarding
+
+Proxmox does not enable IP forwarding by default. Without it, Tailscale cannot relay
+subnet traffic and will show a warning in the admin console.
+
+```bash
+echo 'net.ipv4.ip_forward = 1' >> /etc/sysctl.conf
+echo 'net.ipv6.conf.all.forwarding = 1' >> /etc/sysctl.conf
+sysctl -p
+```
 
 ### Install
 
@@ -43,8 +57,58 @@ tailscale up --advertise-routes=192.168.1.0/24 --accept-dns=false
 
 ### Approve the subnet route
 
-In the Tailscale admin console → **Machines** → click `pve-01` → **Edit route settings**
+In the Tailscale admin console → **Machines** → click the host → **Edit route settings**
 → enable `192.168.1.0/24`.
+
+---
+
+## Subnet Router Setup — Synology NAS
+
+Tailscale is available as a native package in the Synology Package Center.
+
+### Install
+
+Synology DSM → Package Center → search **Tailscale** → Install
+
+### Configure subnet routing
+
+In the Tailscale package UI, set **Advertised routes** to `192.168.1.0/24`.
+
+### Approve the subnet route
+
+Tailscale admin console → **Machines** → click `nas` → **Edit route settings**
+→ enable `192.168.1.0/24`.
+
+Tailscale automatically load-balances and fails over between multiple subnet routers
+advertising the same route. No further configuration required.
+
+---
+
+## Split DNS Setup
+
+Split DNS routes `fiddlestick.org` queries to Pi-hole when on the tailnet, so
+`*.fiddlestick.org` names resolve to `192.168.1.201` (ingress-nginx) from anywhere.
+
+### Configure in Tailscale admin console
+
+**DNS** → **Nameservers** → **Add nameserver**:
+- IP: `192.168.1.161`
+- Enable **Restrict to domain**: `fiddlestick.org`
+
+> Do not set Pi-hole as a global nameserver — that would route all DNS through Pi-hole
+> including ad blocking, which may be undesirable on remote devices.
+
+---
+
+## Services Accessible by IP (no DNS required)
+
+These are reachable directly by IP once the subnet route is active:
+
+| Service | URL |
+|---------|-----|
+| Proxmox UI | `https://192.168.1.162:8006` |
+| Pi-hole | `https://192.168.1.161` |
+| NAS (DSM) | `http://192.168.1.3:5000` |
 
 ---
 
@@ -83,18 +147,31 @@ Example to restrict a `tag:family` group to ingress only:
 ## Verify
 
 ```bash
-# Confirm subnet router is active on pve-01
+# Confirm subnet router is active
 tailscale status
 
-# From any tailnet device, confirm LAN access
+# From any tailnet device off the LAN, confirm LAN access
 ping 192.168.1.201
+
+# Confirm DNS resolution
+nslookup argocd.fiddlestick.org   # should return 192.168.1.201
 ```
 
 ---
 
 ## Checklist
 
-- [x] Tailscale installed on `pve-01` ✅
+### pve-01 subnet router
+- [x] IP forwarding enabled (`net.ipv4.ip_forward`, `net.ipv6.conf.all.forwarding`) ✅
+- [x] Tailscale installed ✅
 - [x] Subnet route `192.168.1.0/24` advertised and approved ✅
-- [x] LAN accessible from tailnet ✅
+
+### NAS subnet router
+- [x] Tailscale installed via Package Center ✅
+- [x] Subnet route `192.168.1.0/24` advertised and approved ✅
+
+### Split DNS
+- [ ] Pi-hole (`192.168.1.161`) configured as split DNS nameserver for `fiddlestick.org`
+
+### Access control
 - [ ] ACLs configured before inviting other users
